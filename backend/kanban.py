@@ -18,7 +18,13 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-KANBAN_DIR = Path(os.getenv("KANBAN_DIR") or Path.home() / "qiuzhao-kanban")
+def _default_kanban_dir() -> Path:
+    # 两个仓库并排放时（…/job-hunter 与 …/qiuzhao-kanban）优先用同级目录
+    sibling = Path(__file__).resolve().parents[2] / "qiuzhao-kanban"
+    return sibling if sibling.is_dir() else Path.home() / "qiuzhao-kanban"
+
+
+KANBAN_DIR = Path(os.getenv("KANBAN_DIR") or _default_kanban_dir())
 MAX_BACKUPS = 30
 
 STATUS_LABELS = {"pending": "待测评", "interview": "面试中", "waiting": "等结果",

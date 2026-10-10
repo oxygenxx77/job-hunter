@@ -33,22 +33,27 @@ struct PetConfig {
             ?? Bundle.main.object(forInfoDictionaryKey: "PetKind") as? String
             ?? ProcessInfo.processInfo.environment["PET_KIND"]
             ?? "kanban"
-        let home = NSHomeDirectory()
         switch PetKind(rawValue: raw) ?? .kanban {
         case .kanban:
-            let dir = home + "/qiuzhao-kanban"
+            let dir = projectDir(["vibecoding/qiuzhao-kanban", "qiuzhao-kanban"])
             return PetConfig(kind: .kanban, petName: "小招", appTitle: "秋招看板", port: 8000,
                              healthPath: "api/status", workDir: dir, executable: dir + "/venv/bin/uvicorn",
                              arguments: ["main:app", "--host", "127.0.0.1", "--port", "8000", "--reload"],
                              defaultRightInset: 30)
         case .jobhunter:
-            let dir = home + "/Desktop/job-hunter"
+            let dir = projectDir(["vibecoding/job-hunter", "Desktop/job-hunter"])
             return PetConfig(kind: .jobhunter, petName: "小航", appTitle: "求职助手", port: 8001,
                              healthPath: "api/stats", workDir: dir + "/backend", executable: dir + "/.venv/bin/uvicorn",
                              arguments: ["main:app", "--host", "127.0.0.1", "--port", "8001", "--reload",
                                          "--reload-dir", dir + "/backend"],
                              defaultRightInset: 160)
         }
+    }
+
+    /// 按顺序找第一个存在的项目目录（相对主目录），都不存在就用第一个
+    static func projectDir(_ candidates: [String]) -> String {
+        let paths = candidates.map { NSHomeDirectory() + "/" + $0 }
+        return paths.first { FileManager.default.fileExists(atPath: $0) } ?? paths[0]
     }
 }
 
