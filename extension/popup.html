@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>求职助手</title>
+  <style>
+    /* ===== 基础样式：Notion 风格的简洁配色 ===== */
+    :root {
+      --text: #37352f;
+      --muted: #787774;
+      --border: #e9e9e7;
+      --bg-hover: #f1f1ef;
+      --blue: #2383e2;
+      --green: #0f7b6c;
+      --green-bg: #dbeddb;
+      --red: #e03e3e;
+      --red-bg: #ffe2dd;
+      --yellow-bg: #fdecc8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      width: 320px;
+      margin: 0;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      font-size: 13px;
+      color: var(--text);
+      background: #fff;
+    }
+    h1 {
+      margin: 0 0 4px;
+      font-size: 16px;
+      font-weight: 600;
+    }
+    .sub { color: var(--muted); font-size: 12px; margin-bottom: 14px; }
+
+    /* 状态行 */
+    .status-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      margin-bottom: 8px;
+    }
+    .status-row .label { color: var(--muted); }
+    .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; background: #c7c7c5; }
+    .dot.ok { background: #2da44e; }
+    .dot.bad { background: var(--red); }
+
+    /* 主按钮 */
+    button {
+      font: inherit;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: background .15s, opacity .15s;
+    }
+    .primary {
+      width: 100%;
+      margin-top: 6px;
+      padding: 10px;
+      border: none;
+      background: var(--blue);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .primary:hover { background: #1b6fc2; }
+    .primary:disabled { opacity: .55; cursor: not-allowed; }
+
+    .secondary-row { display: flex; gap: 8px; margin-top: 8px; }
+    .secondary {
+      flex: 1;
+      padding: 7px;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--text);
+    }
+    .secondary:hover { background: var(--bg-hover); }
+
+    /* 结果提示 */
+    .result {
+      display: none;
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 6px;
+      line-height: 1.6;
+    }
+    .result.show { display: block; }
+    .result.success { background: var(--green-bg); color: var(--green); }
+    .result.error { background: var(--red-bg); color: var(--red); }
+    .result.info { background: var(--yellow-bg); color: #9f6b00; }
+    .result strong { font-size: 15px; }
+
+    .last { margin-top: 12px; color: var(--muted); font-size: 12px; }
+
+    /* 公司维度采集 */
+    .company-box {
+      margin-top: 12px;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #fafaf9;
+    }
+    .company-box[hidden] { display: none; }
+    .company-opts { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+    .company-opts select { font: inherit; padding: 3px 4px; border: 1px solid var(--border); border-radius: 4px; }
+    .company-opts label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+    .hint { margin-top: 6px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <h1>🧭 求职助手</h1>
+  <div class="sub">在牛客校招列表页一键采集岗位</div>
+
+  <!-- 后端连接状态 -->
+  <div class="status-row">
+    <span class="label">本地服务</span>
+    <span><span id="backendDot" class="dot"></span><span id="backendText">检测中…</span></span>
+  </div>
+
+  <!-- 当前页面识别情况 -->
+  <div class="status-row">
+    <span class="label">当前页面</span>
+    <span id="pageText">检测中…</span>
+  </div>
+
+  <button id="collectBtn" class="primary">采集本页岗位</button>
+
+  <!-- 公司列表页：按公司拉取全部岗位 -->
+  <div id="companyBox" class="company-box" hidden>
+    <div>本页识别到 <b id="companyCount">0</b> 家公司，可拉取它们的全部在招岗位</div>
+    <div class="company-opts">
+      <select id="recruitType">
+        <option value="1">只要校招</option>
+        <option value="1,2">校招 + 实习</option>
+        <option value="0">全部（含社招）</option>
+      </select>
+      <label><input type="checkbox" id="onlyTarget" checked />只要意向方向</label>
+    </div>
+    <div id="targetHint" class="hint"></div>
+    <button id="companyBtn" class="primary">采集这些公司的全部岗位</button>
+  </div>
+
+  <div class="secondary-row">
+    <button id="openPanelBtn" class="secondary">打开管理面板</button>
+    <button id="clearBtn" class="secondary" title="清空本标签页已识别的岗位缓存">清空识别缓存</button>
+  </div>
+
+  <div id="result" class="result"></div>
+  <div id="last" class="last"></div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

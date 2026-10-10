@@ -1,0 +1,2340 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>求职助手</title>
+  <style>
+    /* =====================================================================
+       Notion 风格配色与基础样式
+       ===================================================================== */
+    :root {
+      --text: #37352f;
+      --muted: #787774;
+      --light: #9b9a97;
+      --border: #e9e9e7;
+      --bg: #ffffff;
+      --bg-soft: #f7f7f5;
+      --bg-hover: #f1f1ef;
+      --blue: #2383e2;
+      --blue-bg: #d3e5ef;
+      --green: #0f7b6c;
+      --green-bg: #dbeddb;
+      --orange: #d9730d;
+      --orange-bg: #fadec9;
+      --red: #e03e3e;
+      --red-bg: #ffe2dd;
+      --yellow-bg: #fdecc8;
+      --gray-bg: #e3e2e0;
+      --radius: 6px;
+      --shadow: rgba(15, 15, 15, 0.05) 0 0 0 1px, rgba(15, 15, 15, 0.1) 0 3px 6px, rgba(15, 15, 15, 0.2) 0 9px 24px;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", Helvetica, Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--text);
+      background: var(--bg);
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; }
+    button, input, select, textarea { font: inherit; color: inherit; }
+
+    .page { max-width: 1180px; margin: 0 auto; padding: 40px 48px 80px; }
+
+    /* =====================================================================
+       顶部：标题 + 风险状态栏
+       ===================================================================== */
+    .header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 28px;
+    }
+    .title-block h1 {
+      margin: 0;
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+    .title-block .subtitle { margin-top: 6px; color: var(--muted); font-size: 14px; }
+    .ai-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-left: 6px;
+      padding: 1px 8px;
+      border-radius: 10px;
+      background: var(--bg-soft);
+      border: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .risk-card {
+      min-width: 280px;
+      padding: 12px 16px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg);
+    }
+    .risk-card .risk-msg { font-weight: 600; font-size: 14px; }
+    .risk-card .risk-sub {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .progress { height: 4px; margin-top: 8px; background: var(--bg-hover); border-radius: 2px; overflow: hidden; }
+    .progress > div { height: 100%; width: 0; background: #2da44e; transition: width .3s, background .3s; }
+    .risk-card.yellow { background: #fffaf0; border-color: #f5d9a8; }
+    .risk-card.yellow .progress > div { background: var(--orange); }
+    .risk-card.red { background: #fff5f4; border-color: #f5c2bc; }
+    .risk-card.red .progress > div { background: var(--red); }
+
+    /* =====================================================================
+       统计卡片
+       ===================================================================== */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .stat {
+      padding: 12px 14px;
+      border-radius: 8px;
+      background: var(--bg-soft);
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .stat:hover { background: var(--bg-hover); }
+    .stat .num { font-size: 22px; font-weight: 600; }
+    .stat .label { color: var(--muted); font-size: 12px; }
+
+    /* =====================================================================
+       工具栏
+       ===================================================================== */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .toolbar .spacer { flex: 1; }
+    .field {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 8px;
+      border-radius: var(--radius);
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .field:hover { background: var(--bg-hover); }
+    .field select, .field input {
+      border: none;
+      outline: none;
+      background: transparent;
+      color: var(--text);
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .field input { width: 90px; cursor: text; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg);
+      font-size: 13px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background .15s, opacity .15s;
+    }
+    .btn:hover { background: var(--bg-hover); }
+    .btn:disabled { opacity: .45; cursor: not-allowed; }
+    .btn.primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+    .btn.primary:hover { background: #1b6fc2; }
+    .btn.danger { color: var(--red); }
+    .btn.ghost { border-color: transparent; background: transparent; }
+    .btn.ghost:hover { background: var(--bg-hover); }
+
+    /* 批量操作栏 */
+    .batch-bar {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      margin-top: 12px;
+      padding: 8px 12px;
+      border-radius: var(--radius);
+      background: #e7f3f8;
+      font-size: 13px;
+    }
+    .batch-bar.show { display: flex; }
+    .batch-bar .count { font-weight: 600; color: var(--blue); margin-right: 6px; }
+
+    /* =====================================================================
+       岗位表格
+       ===================================================================== */
+    .table-wrap { margin-top: 4px; }
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
+      color: var(--muted);
+      font-weight: 500;
+      font-size: 13px;
+      text-align: left;
+      white-space: nowrap;
+    }
+    tbody td {
+      padding: 10px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    tbody tr { transition: background .1s; }
+    tbody tr:hover { background: var(--bg-soft); }
+    tbody tr.selected { background: #f0f7fc; }
+    .col-check { width: 36px; }
+    .col-score { width: 140px; white-space: nowrap; }
+    .col-city { width: 120px; color: var(--muted); }
+    .col-status { width: 90px; }
+    .col-actions { width: 210px; text-align: right; white-space: nowrap; }
+    input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; accent-color: var(--blue); }
+
+    .company { font-weight: 500; }
+    .job-title {
+      cursor: pointer;
+      border-bottom: 1px solid rgba(55, 53, 47, .16);
+    }
+    .job-title:hover { border-bottom-color: var(--text); }
+
+    /* 匹配分徽章 */
+    .score {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 40px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+    .score.high { background: var(--green-bg); color: var(--green); }
+    .score.mid { background: var(--orange-bg); color: var(--orange); }
+    .score.low { background: var(--red-bg); color: var(--red); }
+    .score.none { background: var(--bg-hover); color: var(--light); font-weight: 400; font-size: 12px; }
+    .advice { margin-left: 6px; font-size: 12px; color: var(--muted); }
+
+    /* 状态标签 */
+    .tag {
+      display: inline-block;
+      padding: 1px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .tag.pending { background: var(--gray-bg); color: var(--text); }
+    .tag.approved { background: var(--blue-bg); color: #0b6e99; }
+    .tag.applied { background: var(--green-bg); color: var(--green); }
+    .tag.rejected { background: var(--red-bg); color: var(--red); }
+    /* 秋招看板进度标签 */
+    .tag.kb { display: block; width: fit-content; margin-top: 4px; cursor: help; }
+    .tag.kb-pending { background: var(--yellow-bg); color: #8a5a00; }
+    .tag.kb-waiting { background: var(--orange-bg); color: var(--orange); }
+    .tag.kb-submitted { background: var(--blue-bg); color: #0b6e99; }
+    .tag.kb-interview { background: #e3f1f1; color: #2f6f73; }
+    .tag.kb-offer { background: #efe6f5; color: #7b4b94; }
+    .tag.kb-ended { background: var(--gray-bg); color: var(--muted); }
+    .kb-interviews { margin: 8px 0 0; padding-left: 20px; font-size: 14px; line-height: 1.8; }
+
+    .link-btn {
+      padding: 3px 6px;
+      border: none;
+      border-radius: 4px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .link-btn:hover { background: var(--bg-hover); color: var(--text); }
+    .link-btn.apply { color: var(--blue); font-weight: 500; }
+    .link-btn:disabled { color: var(--light); cursor: default; background: transparent; }
+
+    /* 空状态 */
+    .empty {
+      padding: 64px 20px;
+      text-align: center;
+      color: var(--muted);
+    }
+    .empty .icon { font-size: 40px; margin-bottom: 8px; }
+    .empty ol { display: inline-block; text-align: left; margin: 12px 0 0; line-height: 1.9; }
+
+    /* =====================================================================
+       弹层：详情抽屉 + 偏好设置
+       ===================================================================== */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 15, 15, .4);
+      display: none;
+      z-index: 100;
+    }
+    .overlay.show { display: block; }
+
+    .drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: min(560px, 100vw);
+      background: var(--bg);
+      box-shadow: var(--shadow);
+      transform: translateX(100%);
+      visibility: hidden;
+      transition: transform .22s ease, visibility .22s;
+      z-index: 101;
+      display: flex;
+      flex-direction: column;
+    }
+    .drawer.show { transform: translateX(0); visibility: visible; }
+    .drawer-head {
+      display: flex;
+      justify-content: flex-end;
+      padding: 10px 12px;
+    }
+    .drawer-body { flex: 1; overflow-y: auto; padding: 0 40px 40px; }
+    .drawer-body h2 { margin: 4px 0 4px; font-size: 26px; font-weight: 700; line-height: 1.3; }
+    .drawer-body .company-line { color: var(--muted); font-size: 15px; margin-bottom: 20px; }
+
+    .props { margin-bottom: 20px; }
+    .prop { display: flex; align-items: flex-start; min-height: 34px; padding: 4px 0; }
+    .prop .k { width: 120px; flex-shrink: 0; color: var(--muted); font-size: 13px; padding-top: 2px; }
+    .prop .v { flex: 1; word-break: break-all; }
+    .prop .v a { color: var(--blue); text-decoration: none; }
+    .prop .v a:hover { text-decoration: underline; }
+
+    .section-title {
+      margin: 24px 0 8px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+      font-size: 15px;
+    }
+    .callout {
+      display: flex;
+      gap: 10px;
+      padding: 14px 16px;
+      border-radius: var(--radius);
+      background: var(--bg-soft);
+      white-space: pre-wrap;
+      line-height: 1.7;
+    }
+    .jd { white-space: pre-wrap; line-height: 1.8; color: var(--text); }
+    .breakdown { display: flex; gap: 8px; margin-top: 10px; }
+    .breakdown span {
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: var(--bg-hover);
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .drawer-foot {
+      display: flex;
+      gap: 8px;
+      padding: 14px 40px;
+      border-top: 1px solid var(--border);
+    }
+
+    .modal {
+      position: fixed;
+      top: 10vh;
+      left: 50%;
+      width: min(520px, calc(100vw - 32px));
+      max-height: 80vh;
+      overflow-y: auto;
+      transform: translateX(-50%) scale(.98);
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      background: var(--bg);
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+      transition: opacity .15s, transform .15s, visibility .15s;
+      z-index: 102;
+    }
+    .modal.show { opacity: 1; visibility: visible; transform: translateX(-50%) scale(1); pointer-events: auto; }
+    .modal-head { padding: 22px 28px 4px; }
+    .modal-head h3 { margin: 0; font-size: 20px; }
+    .modal-head p { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+    .modal-body { padding: 12px 28px; }
+    .form-row { margin-bottom: 14px; }
+    .form-row label { display: block; margin-bottom: 4px; font-size: 13px; color: var(--muted); }
+    .form-row input {
+      width: 100%;
+      padding: 7px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg-soft);
+      outline: none;
+      transition: border-color .15s, box-shadow .15s, background .15s;
+    }
+    .form-row input:focus { border-color: var(--blue); background: var(--bg); box-shadow: 0 0 0 3px rgba(35, 131, 226, .15); }
+    .form-row .hint { margin-top: 3px; font-size: 12px; color: var(--light); }
+    .modal-foot {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 28px 22px;
+    }
+    .modal-foot label { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); cursor: pointer; }
+
+    /* =====================================================================
+       Toast 提示
+       ===================================================================== */
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 32px;
+      transform: translateX(-50%) translateY(20px);
+      padding: 9px 16px;
+      border-radius: var(--radius);
+      background: #2f2f2f;
+      color: #fff;
+      font-size: 13px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s, transform .2s;
+      z-index: 200;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.error { background: var(--red); }
+
+    /* =====================================================================
+       AI 顾问聊天窗口
+       ===================================================================== */
+    .chat-launcher {
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 22px;
+      background: var(--text);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 500;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      z-index: 150;
+      transition: transform .15s, opacity .15s;
+    }
+    .chat-launcher:hover { transform: translateY(-1px); }
+    .chat-launcher.hidden { opacity: 0; pointer-events: none; }
+
+    .chat-panel {
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      width: 420px;
+      height: min(660px, calc(100vh - 48px));
+      display: flex;
+      flex-direction: column;
+      background: var(--bg);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      z-index: 150;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(12px);
+      transition: opacity .18s, transform .18s, visibility .18s, right .22s ease;
+    }
+    .chat-panel.show { opacity: 1; visibility: visible; transform: translateY(0); }
+    /* 详情抽屉打开时，聊天窗口移到抽屉左侧，两者可以同时查看 */
+    body.drawer-open .chat-panel { right: calc(min(560px, 100vw) + 16px); }
+
+    .chat-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 12px 10px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .chat-head .name { font-weight: 600; flex: 1; }
+    .chat-context {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      margin: 8px 12px 0;
+      padding: 5px 8px 5px 10px;
+      border-radius: var(--radius);
+      background: #e7f3f8;
+      color: #0b6e99;
+      font-size: 12px;
+    }
+    .chat-context.show { display: flex; }
+    .chat-context span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .chat-context button { border: none; background: transparent; color: inherit; cursor: pointer; padding: 0 4px; }
+
+    .chat-messages { flex: 1; overflow-y: auto; padding: 12px 16px; }
+    .chat-welcome { color: var(--muted); font-size: 13px; line-height: 1.7; padding: 8px 0; }
+    .chat-welcome b { color: var(--text); }
+    .msg { margin-bottom: 14px; }
+    .msg.user { display: flex; justify-content: flex-end; }
+    .msg.user .bubble {
+      max-width: 85%;
+      padding: 8px 12px;
+      border-radius: 12px 12px 2px 12px;
+      background: var(--bg-hover);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .msg.assistant .bubble { line-height: 1.75; word-break: break-word; }
+    .msg.assistant .bubble p { margin: 0 0 8px; }
+    .msg.assistant .bubble h4 { margin: 12px 0 6px; font-size: 14px; }
+    .msg.assistant .bubble ul, .msg.assistant .bubble ol { margin: 4px 0 8px; padding-left: 20px; }
+    .msg.assistant .bubble li { margin: 2px 0; }
+    .msg.assistant .bubble a { color: var(--blue); text-decoration: underline; text-underline-offset: 2px; word-break: break-all; }
+    .msg.assistant .bubble code { padding: 1px 4px; border-radius: 3px; background: rgba(135, 131, 120, .15); color: #eb5757; font-size: 12.5px; }
+    .msg.assistant .bubble pre { margin: 6px 0 10px; padding: 10px 12px; border-radius: var(--radius); background: var(--bg-soft); overflow-x: auto; white-space: pre-wrap; }
+    .msg.assistant .bubble pre code { padding: 0; background: none; color: var(--text); }
+    .msg-tools { margin-top: 2px; }
+    .msg-tools button { padding: 2px 6px; border: none; border-radius: 4px; background: transparent; color: var(--light); font-size: 12px; cursor: pointer; }
+    .msg-tools button:hover { background: var(--bg-hover); color: var(--text); }
+
+    .action-card {
+      margin: 0 0 8px;
+      padding: 7px 10px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .action-card.ok { background: var(--green-bg); color: var(--green); }
+    .action-card.fail { background: var(--red-bg); color: var(--red); }
+
+    .typing { display: inline-flex; gap: 4px; padding: 6px 0; }
+    .typing i { width: 6px; height: 6px; border-radius: 50%; background: var(--light); animation: blink 1.2s infinite; }
+    .typing i:nth-child(2) { animation-delay: .2s; }
+    .typing i:nth-child(3) { animation-delay: .4s; }
+    @keyframes blink { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
+
+    .chat-suggestions { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 12px 8px; }
+    .chat-suggestions button {
+      padding: 4px 10px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--bg);
+      color: var(--muted);
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .chat-suggestions button:hover { background: var(--bg-hover); color: var(--text); }
+
+    .chat-input {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      margin: 0 12px 12px;
+      padding: 8px 8px 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .chat-input:focus-within { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(35, 131, 226, .12); }
+    .chat-input textarea {
+      flex: 1;
+      max-height: 140px;
+      border: none;
+      outline: none;
+      resize: none;
+      background: transparent;
+      line-height: 1.5;
+    }
+    .chat-input .btn { padding: 5px 12px; }
+    .chat-input .attach-btn { padding: 5px 8px; }
+    .chat-previews { display: none; flex-wrap: wrap; gap: 8px; padding: 0 12px 8px; }
+    .chat-previews.show { display: flex; }
+    .chat-preview { position: relative; width: 52px; height: 52px; border: 1px solid var(--border); border-radius: 6px; }
+    .chat-preview img { width: 100%; height: 100%; object-fit: cover; border-radius: 6px; display: block; }
+    .chat-preview button {
+      position: absolute;
+      top: -7px;
+      right: -7px;
+      width: 18px;
+      height: 18px;
+      padding: 0;
+      border: none;
+      border-radius: 50%;
+      background: var(--text);
+      color: var(--bg);
+      font-size: 12px;
+      line-height: 18px;
+      cursor: pointer;
+    }
+    .msg.user { flex-direction: column; align-items: flex-end; gap: 6px; }
+    .msg-images { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; max-width: 85%; }
+    .msg-images img { max-width: 150px; max-height: 150px; border: 1px solid var(--border); border-radius: 8px; display: block; }
+    .chat-panel.dragover { outline: 2px dashed var(--blue); outline-offset: -6px; }
+
+    /* =====================================================================
+       视图切换 + 按公司推荐
+       ===================================================================== */
+    .view-tabs { display: flex; gap: 4px; margin-bottom: 10px; }
+    .view-tab {
+      padding: 6px 14px;
+      border: none;
+      border-radius: var(--radius);
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .view-tab:hover { background: var(--bg-hover); }
+    .view-tab.active { background: var(--bg-hover); color: var(--text); font-weight: 600; }
+
+    .company-view { display: none; margin-top: 14px; }
+    body.view-company .company-view { display: block; }
+    body.view-company .table-wrap,
+    body.view-company .batch-bar,
+    body.view-company .list-only { display: none !important; }
+
+    .reco-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .prio-chip {
+      padding: 1px 8px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--bg-soft);
+      color: var(--text);
+    }
+
+    .co-card { margin-bottom: 14px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    .co-card.done { opacity: .75; }
+    .co-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding: 10px 14px;
+      background: var(--bg-soft);
+    }
+    .co-name { font-size: 15px; font-weight: 600; }
+    .co-meta { color: var(--muted); font-size: 12px; }
+    .co-head .spacer { flex: 1; }
+    .limit-badge {
+      padding: 1px 8px;
+      border: 1px solid var(--blue);
+      border-radius: 10px;
+      background: var(--blue-bg);
+      color: #0b6e99;
+      font: inherit;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .limit-badge.unknown { border-style: dashed; border-color: var(--border); background: #fff; color: var(--muted); }
+    .limit-badge.full { border-color: var(--red); background: var(--red-bg); color: var(--red); }
+    .limit-note { color: var(--muted); font-size: 12px; }
+    .kanban-chip {
+      padding: 1px 8px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fff;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .applied-box { margin-top: 20px; }
+    .applied-box > summary {
+      margin-bottom: 12px;
+      color: var(--muted);
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .applied-box .co-card { opacity: .7; transition: opacity .3s, box-shadow .3s; }
+    .applied-box .co-card.flash { opacity: 1; box-shadow: 0 0 0 3px rgba(35, 131, 226, .35); }
+    .co-head a { color: var(--blue); font-size: 13px; text-decoration: none; }
+    .co-head a:hover { text-decoration: underline; }
+
+    .reco-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-top: 1px solid var(--border); }
+    .reco-rank { width: 18px; color: var(--light); font-weight: 600; text-align: center; }
+    .prio {
+      min-width: 40px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: var(--blue-bg);
+      color: #0b6e99;
+      font-weight: 600;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+      cursor: help;
+    }
+    .reco-main { flex: 1; min-width: 0; }
+    .reco-title { font-weight: 500; cursor: pointer; border-bottom: 1px solid rgba(55, 53, 47, .16); }
+    .reco-title:hover { border-bottom-color: var(--text); }
+    .reco-sub { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; color: var(--muted); font-size: 12px; }
+    .chip { padding: 0 6px; border-radius: 4px; background: var(--bg-hover); font-size: 12px; white-space: nowrap; }
+    .chip.good { background: var(--green-bg); color: var(--green); }
+    .chip.warn { background: var(--orange-bg); color: var(--orange); }
+    .chip.bad { background: var(--red-bg); color: var(--red); }
+    .reco-actions { display: flex; gap: 6px; white-space: nowrap; }
+    .reco-actions .btn { padding: 3px 9px; }
+
+    .co-foot {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding: 8px 14px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .co-foot .btn { padding: 3px 9px; }
+    .co-foot a { color: var(--blue); }
+    .co-picked { padding: 8px 14px; border-top: 1px solid var(--border); font-size: 13px; }
+    .co-picked .item { display: inline-flex; align-items: center; gap: 6px; margin: 2px 12px 2px 0; }
+    .co-picked a { color: var(--blue); text-decoration: none; }
+
+    /* 响应式 */
+    @media (max-width: 1100px) {
+      body.drawer-open .chat-panel { right: 24px; z-index: 160; }
+    }
+    @media (max-width: 600px) {
+      .chat-panel { right: 8px; left: 8px; width: auto; bottom: 8px; height: calc(100vh - 16px); }
+    }
+    @media (max-width: 900px) {
+      .page { padding: 24px 16px 60px; }
+      .header { flex-direction: column; }
+      .risk-card { width: 100%; }
+      .stats { grid-template-columns: repeat(3, 1fr); }
+      .col-city, .col-status { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <!-- ================= 顶部 ================= -->
+    <header class="header">
+      <div class="title-block">
+        <h1>🧭 求职助手</h1>
+        <div class="subtitle">
+          半自动采集岗位 · AI 匹配分析 · 辅助投递
+          <span id="aiPill" class="ai-pill">AI 检测中…</span>
+        </div>
+      </div>
+
+      <div id="riskCard" class="risk-card">
+        <div id="riskMsg" class="risk-msg">状态加载中…</div>
+        <div class="risk-sub">
+          <span>今日投递</span>
+          <span><b id="todayApplied">0</b> / <span id="dailyLimit">10</span></span>
+        </div>
+        <div class="progress"><div id="riskBar"></div></div>
+      </div>
+    </header>
+
+    <!-- ================= 统计 ================= -->
+    <section class="stats">
+      <div class="stat" data-status=""><div class="num" id="statTotal">0</div><div class="label">全部岗位</div></div>
+      <div class="stat" data-status="pending"><div class="num" id="statPending">0</div><div class="label">待确认</div></div>
+      <div class="stat" data-status="approved"><div class="num" id="statApproved">0</div><div class="label">待投递</div></div>
+      <div class="stat" data-status="applied"><div class="num" id="statApplied">0</div><div class="label">已投递</div></div>
+      <div class="stat" data-status="rejected"><div class="num" id="statRejected">0</div><div class="label">已拒绝</div></div>
+      <div class="stat" data-score="75"><div class="num" id="statHigh">0</div><div class="label">高匹配（≥75）</div></div>
+    </section>
+
+    <!-- ================= 视图切换 ================= -->
+    <nav class="view-tabs">
+      <button class="view-tab" data-view="list">📋 岗位列表</button>
+      <button class="view-tab" data-view="company">🏢 按公司推荐</button>
+    </nav>
+
+    <!-- ================= 工具栏 ================= -->
+    <section class="toolbar">
+      <label class="field list-only">状态
+        <select id="filterStatus">
+          <option value="">全部</option>
+          <option value="pending">待确认</option>
+          <option value="approved">待投递</option>
+          <option value="applied">已投递</option>
+          <option value="rejected">已拒绝</option>
+        </select>
+      </label>
+      <label class="field list-only">匹配度
+        <select id="filterScore">
+          <option value="">全部</option>
+          <option value="85">≥ 85</option>
+          <option value="75">≥ 75</option>
+          <option value="60">≥ 60</option>
+          <option value="40">≥ 40</option>
+        </select>
+      </label>
+      <label class="field list-only">城市
+        <input id="filterCity" type="text" placeholder="如：深圳" />
+      </label>
+      <button id="resetFilterBtn" class="btn ghost list-only">清除筛选</button>
+
+      <div class="spacer"></div>
+
+      <button id="refreshBtn" class="btn">↻ 刷新</button>
+      <button id="nextBtn" class="btn">投递下一个</button>
+      <button id="prefsBtn" class="btn primary">⚙ 设置偏好</button>
+    </section>
+
+    <!-- 批量操作栏：有选中项时显示 -->
+    <section id="batchBar" class="batch-bar">
+      <span>已选 <span id="selCount" class="count">0</span> 项</span>
+      <button id="batchAppliedBtn" class="btn primary" title="已经投过了：标记为已投递，计入今日投递数并同步到秋招看板">📮 标记已投递</button>
+      <button class="btn" data-batch="approved" title="打算投、还没投：放进「待投递」队列">✓ 加入待投递</button>
+      <button class="btn danger" data-batch="rejected">✕ 标记拒绝</button>
+      <button class="btn" data-batch="pending">重置为待确认</button>
+      <button id="batchRematchBtn" class="btn">AI 重新分析</button>
+      <div class="spacer" style="flex:1"></div>
+      <button id="clearSelBtn" class="btn ghost">取消选择</button>
+    </section>
+
+    <!-- ================= 岗位表格 ================= -->
+    <section class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-check"><input type="checkbox" id="checkAll" title="全选" /></th>
+            <th class="col-score">匹配度</th>
+            <th>公司</th>
+            <th>岗位</th>
+            <th class="col-city">城市</th>
+            <th class="col-status">状态</th>
+            <th class="col-actions">操作</th>
+          </tr>
+        </thead>
+        <tbody id="jobBody"></tbody>
+      </table>
+      <div id="emptyState" class="empty" style="display:none"></div>
+    </section>
+
+    <!-- ================= 按公司推荐 ================= -->
+    <section id="companyView" class="company-view">
+      <div id="recoHead" class="reco-head"></div>
+      <div id="recoList"></div>
+    </section>
+  </div>
+
+  <!-- ================= 遮罩 ================= -->
+  <div id="overlay" class="overlay"></div>
+
+  <!-- ================= 岗位详情抽屉 ================= -->
+  <aside id="drawer" class="drawer" aria-hidden="true">
+    <div class="drawer-head">
+      <button id="closeDrawerBtn" class="btn ghost" title="关闭（Esc）">✕</button>
+    </div>
+    <div id="drawerBody" class="drawer-body"></div>
+    <div id="drawerFoot" class="drawer-foot"></div>
+  </aside>
+
+  <!-- ================= 偏好设置弹窗 ================= -->
+  <div id="prefsModal" class="modal" role="dialog" aria-hidden="true">
+    <div class="modal-head">
+      <h3>求职偏好</h3>
+      <p>多个值用逗号分隔，AI 会据此计算「岗位偏好」和「城市」两部分得分。</p>
+    </div>
+    <form id="prefsForm" class="modal-body">
+      <div class="form-row">
+        <label for="prefRoles">目标岗位</label>
+        <input id="prefRoles" placeholder="电商运营, 用户运营, 数据分析" />
+      </div>
+      <div class="form-row">
+        <label for="prefCities">目标城市</label>
+        <input id="prefCities" placeholder="深圳, 广州, 上海" />
+      </div>
+      <div class="form-row">
+        <label for="prefRolePriority">岗位方向优先级</label>
+        <input id="prefRolePriority" placeholder="运营>营销=产品" />
+        <div class="hint">「&gt;」表示更优先，「=」表示同等。用于「按公司推荐」排序，也会告诉 AI</div>
+      </div>
+      <div class="form-row">
+        <label for="prefCityPriority">城市优先级</label>
+        <input id="prefCityPriority" placeholder="深圳>广州=上海>北京" />
+        <div class="hint">不在列表里的城市不会被排除，岗位足够好照样推荐，只是排得靠后一些</div>
+      </div>
+      <div class="form-row">
+        <label for="prefIndustries">目标行业</label>
+        <input id="prefIndustries" placeholder="互联网, 电商, 快消" />
+      </div>
+      <div class="form-row">
+        <label for="prefAvoidCompanies">黑名单公司</label>
+        <input id="prefAvoidCompanies" placeholder="不想投的公司" />
+        <div class="hint">命中黑名单的岗位会直接判 0 分</div>
+      </div>
+      <div class="form-row">
+        <label for="prefAvoidRoles">黑名单岗位</label>
+        <input id="prefAvoidRoles" placeholder="销售, 客服" />
+        <div class="hint">岗位名包含这些关键词即视为黑名单</div>
+      </div>
+      <div class="form-row">
+        <label for="prefLimit">每日投递上限</label>
+        <input id="prefLimit" type="number" min="1" max="200" value="10" />
+      </div>
+    </form>
+    <div class="modal-foot">
+      <label><input type="checkbox" id="prefRematch" checked /> 保存后重新分析「待确认」岗位</label>
+      <div style="display:flex; gap:8px">
+        <button id="cancelPrefsBtn" class="btn">取消</button>
+        <button id="savePrefsBtn" class="btn primary">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <!-- ================= AI 顾问 ================= -->
+  <button id="chatLauncher" class="chat-launcher" title="和 AI 求职顾问对话">💬 AI 顾问</button>
+
+  <section id="chatPanel" class="chat-panel" aria-hidden="true">
+    <div class="chat-head">
+      <span class="name">💬 AI 求职顾问</span>
+      <button id="chatClearBtn" class="btn ghost" title="清空对话">清空</button>
+      <button id="chatCloseBtn" class="btn ghost" title="收起">✕</button>
+    </div>
+    <div id="chatContext" class="chat-context">
+      <span id="chatContextText"></span>
+      <button id="chatContextClear" title="不再围绕这个岗位">✕</button>
+    </div>
+    <div id="chatMessages" class="chat-messages"></div>
+    <div id="chatSuggestions" class="chat-suggestions"></div>
+    <div id="chatPreviews" class="chat-previews"></div>
+    <form id="chatForm" class="chat-input">
+      <button id="chatAttachBtn" type="button" class="btn ghost attach-btn" title="发图片（也可以直接粘贴截图或拖进来）">🖼</button>
+      <input id="chatFile" type="file" accept="image/*" multiple hidden>
+      <textarea id="chatInput" rows="1" placeholder="问点什么… Enter 发送，可粘贴截图"></textarea>
+      <button id="chatSendBtn" type="submit" class="btn primary">发送</button>
+    </form>
+  </section>
+
+  <script>
+    /* =====================================================================
+       全局状态与常量
+       ===================================================================== */
+
+    // 通过后端访问页面时用相对路径；直接双击打开 html 文件时访问本地后端
+    const API = location.protocol === 'file:' ? 'http://127.0.0.1:8001' : '';
+
+    const STATUS_LABELS = { pending: '待确认', approved: '待投递', applied: '已投递', rejected: '已拒绝' };
+
+    const state = {
+      jobs: [],               // 当前列表
+      selected: new Set(),    // 选中的岗位 id
+      risk: null,             // 风险状态
+      currentJobId: null,     // 详情抽屉中的岗位
+      pollTimer: null,        // AI 分析中时的轮询定时器
+      kanbanAvailable: false, // 本机是否找到秋招看板
+      view: localStorage.getItem('jh_view') === 'company' ? 'company' : 'list',
+      reco: null,             // 按公司推荐的数据
+      recoOffset: {},         // 每家公司「换一批」翻到第几个
+      recoTimer: null,        // AI 分析 / 估算规模进行中时的轮询定时器
+    };
+
+    const $ = (id) => document.getElementById(id);
+
+    /* =====================================================================
+       工具函数
+       ===================================================================== */
+
+    /** 调用后端接口，非 2xx 时抛出带后端错误信息的异常 */
+    async function api(path, options = {}) {
+      const init = { ...options, headers: { 'Content-Type': 'application/json', ...(options.headers || {}) } };
+      if (init.body && typeof init.body !== 'string') init.body = JSON.stringify(init.body);
+      let resp;
+      try {
+        resp = await fetch(API + path, init);
+      } catch (e) {
+        throw new Error('无法连接后端服务，请确认已启动 uvicorn');
+      }
+      const data = await resp.json().catch(() => null);
+      if (!resp.ok) {
+        const detail = data && data.detail;
+        throw new Error(typeof detail === 'string' ? detail : `请求失败（HTTP ${resp.status}）`);
+      }
+      return data;
+    }
+
+    /** HTML 转义，防止采集到的文本注入页面 */
+    function esc(value) {
+      return String(value ?? '').replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+      }[c]));
+    }
+
+    /** 只允许 http/https 链接 */
+    function safeUrl(url) {
+      return /^https?:\/\//i.test(url || '') ? url : '';
+    }
+
+    /** 底部提示 */
+    let toastTimer = null;
+    function toast(msg, isError = false) {
+      const el = $('toast');
+      el.textContent = msg;
+      el.className = `toast show${isError ? ' error' : ''}`;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { el.className = 'toast'; }, 2600);
+    }
+
+    /** 逗号分隔字符串 ↔ 数组（兼容中英文逗号、顿号） */
+    const splitList = (s) => (s || '').split(/[,，、]/).map((x) => x.trim()).filter(Boolean);
+    const joinList = (arr) => (arr || []).join(', ');
+
+    /** 匹配分徽章 */
+    function scoreBadge(job) {
+      if (job.match_score === null || job.match_score === undefined) {
+        return '<span class="score none">分析中…</span>';
+      }
+      const s = job.match_score;
+      const cls = s >= 75 ? 'high' : s >= 55 ? 'mid' : 'low';
+      return `<span class="score ${cls}">${s}</span>`;
+    }
+
+    /** 状态标签 */
+    function statusTag(status) {
+      return `<span class="tag ${esc(status)}">${esc(STATUS_LABELS[status] || status)}</span>`;
+    }
+
+    /** 秋招看板里该公司的进度标签（看板中没有该公司时为空） */
+    function kanbanTag(job) {
+      const kb = job.kanban;
+      if (!kb) return '';
+      const tip = [`看板卡片：${kb.company}`, kb.positions && `岗位：${kb.positions}`, kb.note && `备注：${kb.note}`]
+        .filter(Boolean).join('\n');
+      return `<span class="tag kb kb-${esc(kb.status)}" title="${esc(tip)}">看板：${esc(kb.status_label || kb.status)}</span>`;
+    }
+
+    /** 详情抽屉中的「秋招看板进度」区块 */
+    function kanbanSection(job) {
+      const kb = job.kanban;
+      if (!kb) {
+        return state.kanbanAvailable
+          ? `<div class="section-title">秋招看板进度</div>
+             <div class="callout"><span>🗂️</span><div>看板里还没有这家公司，标记已投递后会自动加到看板</div></div>`
+          : '';
+      }
+      const interviews = (kb.interviews || []).map((iv) =>
+        `<li>${esc(iv.round || '面试')}｜${esc(iv.date || '日期未填')}${iv.time ? ' ' + esc(iv.time) : ''}｜${esc(iv.result || '待定')}${iv.position ? `（${esc(iv.position)}）` : ''}</li>`
+      ).join('');
+      return `
+        <div class="section-title">秋招看板进度</div>
+        <div class="props">
+          <div class="prop"><div class="k">看板状态</div><div class="v">${kanbanTag(job)}</div></div>
+          <div class="prop"><div class="k">看板岗位</div><div class="v">${esc(kb.positions) || '—'}</div></div>
+          ${kb.deadline ? `<div class="prop"><div class="k">截止时间</div><div class="v">${esc(kb.deadline)}</div></div>` : ''}
+          <div class="prop"><div class="k">看板备注</div><div class="v">${esc(kb.note) || '—'}</div></div>
+        </div>
+        ${interviews ? `<ul class="kb-interviews">${interviews}</ul>` : ''}`;
+    }
+
+    /** 拆分 AI 理由与末尾的「[简历 x / 偏好 y / 城市 z]」分项 */
+    function splitReason(reason) {
+      const text = reason || '';
+      const m = text.match(/\[简历 (\d+) \/ 偏好 (\d+) \/ 城市 (\d+)\]\s*$/);
+      if (!m) return { text, breakdown: null };
+      return {
+        text: text.slice(0, m.index).trim(),
+        breakdown: { resume: m[1], preference: m[2], city: m[3] },
+      };
+    }
+
+    /* =====================================================================
+       数据加载
+       ===================================================================== */
+
+    /** 读取筛选条件拼成查询参数 */
+    function buildQuery() {
+      const params = new URLSearchParams();
+      const status = $('filterStatus').value;
+      const score = $('filterScore').value;
+      const city = $('filterCity').value.trim();
+      if (status) params.set('status', status);
+      if (score) params.set('min_score', score);
+      if (city) params.set('city', city);
+      const qs = params.toString();
+      return qs ? `?${qs}` : '';
+    }
+
+    async function loadJobs() {
+      state.jobs = await api(`/api/jobs${buildQuery()}`);
+      // 清理已不在列表中的选中项
+      const ids = new Set(state.jobs.map((j) => j.id));
+      state.selected.forEach((id) => { if (!ids.has(id)) state.selected.delete(id); });
+      renderTable();
+      schedulePoll();
+    }
+
+    async function loadStats() {
+      const s = await api('/api/stats');
+      $('statTotal').textContent = s.total;
+      $('statPending').textContent = s.pending;
+      $('statApproved').textContent = s.approved;
+      $('statApplied').textContent = s.applied;
+      $('statRejected').textContent = s.rejected;
+      $('statHigh').textContent = s.high_match;
+      state.kanbanAvailable = !!s.kanban_available;
+      const pill = $('aiPill');
+      pill.textContent = s.ai_configured
+        ? `AI：${s.model}${s.unscored ? ` · ${s.unscored} 个分析中` : ''}`
+        : 'AI 未配置 · 使用关键词规则估算';
+      pill.title = s.ai_configured ? '已配置火山引擎 Ark' : '在项目根目录 .env 中填写 OPENAI_API_KEY 后重启后端';
+    }
+
+    async function loadRisk() {
+      const r = await api('/api/risk_status');
+      state.risk = r;
+      $('riskCard').className = `risk-card ${r.level}`;
+      $('riskMsg').textContent = r.message;
+      $('todayApplied').textContent = r.today_applied;
+      $('dailyLimit').textContent = r.daily_limit;
+      $('riskBar').style.width = `${Math.min(100, (r.today_applied / r.daily_limit) * 100)}%`;
+      return r;
+    }
+
+    async function refreshAll(showToast = false) {
+      try {
+        await Promise.all([loadJobs(), loadStats(), loadRisk(), state.view === 'company' ? loadReco() : null]);
+        if (showToast) toast('已刷新');
+      } catch (e) {
+        toast(e.message, true);
+      }
+    }
+
+    /** 有岗位正在 AI 分析时，每 5 秒自动刷新一次 */
+    function schedulePoll() {
+      clearTimeout(state.pollTimer);
+      const analyzing = state.jobs.some((j) => j.match_score === null || j.match_score === undefined);
+      if (analyzing) {
+        state.pollTimer = setTimeout(() => {
+          Promise.all([loadJobs(), loadStats()]).catch(() => {});
+        }, 5000);
+      }
+    }
+
+    /* =====================================================================
+       渲染表格
+       ===================================================================== */
+
+    function renderTable() {
+      const body = $('jobBody');
+      const empty = $('emptyState');
+
+      if (!state.jobs.length) {
+        body.innerHTML = '';
+        empty.style.display = 'block';
+        const hasFilter = buildQuery() !== '';
+        empty.innerHTML = hasFilter
+          ? '<div class="icon">🔍</div><div>没有符合筛选条件的岗位</div>'
+          : `<div class="icon">📭</div>
+             <div>还没有岗位，按以下步骤开始：</div>
+             <ol>
+               <li>在 Chrome / Edge 加载 <code>extension</code> 目录为扩展</li>
+               <li>打开牛客网校招岗位列表页，滚动加载岗位</li>
+               <li>点击扩展图标 →「采集本页岗位」</li>
+             </ol>`;
+        updateSelectionUI();
+        return;
+      }
+
+      empty.style.display = 'none';
+      body.innerHTML = state.jobs.map((job) => {
+        const checked = state.selected.has(job.id);
+        const url = safeUrl(job.link) || safeUrl(job.apply_link);
+        const applied = job.status === 'applied';
+        const reasonTip = esc(splitReason(job.match_reason).text);
+        return `
+          <tr data-id="${job.id}" class="${checked ? 'selected' : ''}">
+            <td class="col-check"><input type="checkbox" class="row-check" ${checked ? 'checked' : ''} /></td>
+            <td class="col-score" title="${reasonTip}">
+              ${scoreBadge(job)}${job.match_advice ? `<span class="advice">${esc(job.match_advice)}</span>` : ''}
+            </td>
+            <td class="company">${esc(job.company) || '<span style="color:var(--light)">未知公司</span>'}</td>
+            <td><span class="job-title" data-action="detail">${esc(job.title)}</span></td>
+            <td class="col-city">${esc(job.city) || '—'}</td>
+            <td class="col-status">${statusTag(job.status)}${kanbanTag(job)}</td>
+            <td class="col-actions">
+              <button class="link-btn" data-action="detail">查看详情</button>
+              <button class="link-btn" data-action="open" ${url ? '' : 'disabled'}>打开原链接</button>
+              <button class="link-btn apply" data-action="apply" ${applied ? 'disabled' : ''}>${applied ? '已投递' : '投递'}</button>
+            </td>
+          </tr>`;
+      }).join('');
+      updateSelectionUI();
+    }
+
+    /** 同步全选框和批量操作栏 */
+    function updateSelectionUI() {
+      const n = state.selected.size;
+      $('selCount').textContent = n;
+      $('batchBar').classList.toggle('show', n > 0);
+      const all = $('checkAll');
+      all.checked = state.jobs.length > 0 && n === state.jobs.length;
+      all.indeterminate = n > 0 && n < state.jobs.length;
+    }
+
+    /* =====================================================================
+       岗位操作
+       ===================================================================== */
+
+    const findJob = (id) => state.jobs.find((j) => j.id === id);
+
+    /** 修改单个岗位状态 */
+    async function setStatus(id, status) {
+      try {
+        await api(`/api/jobs/${id}/status`, { method: 'POST', body: { status } });
+        toast(`已标记为「${STATUS_LABELS[status]}」`);
+        await refreshAll();
+        if (state.currentJobId === id) openDetail(id);
+      } catch (e) {
+        toast(e.message, true);
+      }
+    }
+
+    /** 批量修改状态 */
+    async function batchStatus(status) {
+      const ids = [...state.selected];
+      if (!ids.length) return;
+      if (ids.every((id) => findJob(id)?.status === status)) {
+        const hint = status === 'approved' ? '，投完后点「📮 标记已投递」' : '';
+        toast(`选中的岗位已经是「${STATUS_LABELS[status]}」了${hint}`);
+        return;
+      }
+      try {
+        const r = await api('/api/jobs/batch_status', { method: 'POST', body: { ids, status } });
+        toast(`已将 ${r.updated} 个岗位标记为「${STATUS_LABELS[status]}」`);
+        state.selected.clear();
+        await refreshAll();
+      } catch (e) {
+        toast(e.message, true);
+      }
+    }
+
+    /** 批量标记已投递：逐个走投递接口，受每日上限约束并同步看板；达到上限就停 */
+    async function batchApplied() {
+      const ids = [...state.selected].filter((id) => findJob(id)?.status !== 'applied');
+      if (!ids.length) {
+        toast('选中的岗位都已经是「已投递」了');
+        return;
+      }
+      if (!confirm(`把选中的 ${ids.length} 个岗位标记为「已投递」？\n会计入今日投递数，并同步到秋招看板。`)) return;
+      let done = 0;
+      let synced = false;
+      let error = '';
+      for (const id of ids) {
+        try {
+          const r = await api(`/api/mark_applied/${id}`, { method: 'POST' });
+          done += 1;
+          synced = synced || !!r.kanban_sync;
+          state.selected.delete(id);
+        } catch (e) {
+          error = e.message;
+          break;
+        }
+      }
+      if (error) toast(done ? `已标记 ${done} 个，剩下的没标上：${error}` : error, true);
+      else toast(`已标记 ${done} 个岗位为已投递 🎉${synced ? ' 已同步秋招看板' : ''}`);
+      await refreshAll();
+      loadRisk().catch(() => {});
+    }
+
+    /** 重新 AI 分析（ids 为空表示全部待确认岗位） */
+    async function rematch(ids) {
+      try {
+        const r = await api('/api/rematch', { method: 'POST', body: { ids: ids && ids.length ? ids : null } });
+        toast(r.reset ? `已提交 ${r.reset} 个岗位重新分析` : '没有需要重新分析的岗位');
+        await refreshAll();
+      } catch (e) {
+        toast(e.message, true);
+      }
+    }
+
+    /** 打开原链接 */
+    function openLink(job) {
+      const url = safeUrl(job.link) || safeUrl(job.apply_link);
+      if (url) window.open(url, '_blank', 'noopener');
+      else toast('该岗位没有可用链接', true);
+    }
+
+    /**
+     * 投递：先检查每日上限 → 新标签打开申请页 → 用户手动完成后确认 → 标记已投递
+     * （真正的投递动作由用户本人在招聘网站完成）
+     */
+    async function applyJob(job) {
+      try {
+        const risk = await loadRisk();
+        if (!risk.can_apply) {
+          toast(`今日投递已达上限（${risk.daily_limit}），明天再继续吧`, true);
+          return;
+        }
+        const url = safeUrl(job.apply_link) || safeUrl(job.link);
+        // 让「简历自动填充」扩展在网申页上认出这个岗位（失败不影响投递）
+        api(`/api/jobs/${job.id}/apply_intent`, { method: 'POST' }).catch(() => {});
+        if (url) window.open(url, '_blank', 'noopener');
+
+        const ok = confirm(
+          `${url ? '已在新标签页打开' : '该岗位没有链接，请自行前往'}「${job.company} - ${job.title}」的投递页面。\n\n` +
+          '完成投递后点击「确定」标记为已投递；点击「取消」暂不标记。'
+        );
+        if (!ok) return;
+
+        const r = await api(`/api/mark_applied/${job.id}`, { method: 'POST' });
+        toast(r.kanban_sync ? `已标记为已投递 🎉 ${r.kanban_sync}` : '已标记为已投递 🎉');
+        await refreshAll();
+        if (state.currentJobId === job.id) openDetail(job.id);
+      } catch (e) {
+        toast(e.message, true);
+        loadRisk().catch(() => {});
+      }
+    }
+
+    /** 投递下一个：取匹配度最高的「待投递」岗位 */
+    async function applyNext() {
+      try {
+        const r = await api('/api/next_approved');
+        if (!r.can_apply) {
+          toast('今日投递已达上限，明天再继续吧', true);
+          return;
+        }
+        if (!r.job) {
+          toast('没有「待投递」的岗位，先在列表中勾选岗位并点击「加入待投递」');
+          return;
+        }
+        await applyJob(r.job);
+      } catch (e) {
+        toast(e.message, true);
+      }
+    }
+
+    /* =====================================================================
+       详情抽屉
+       ===================================================================== */
+
+    async function openDetail(id) {
+      let job;
+      try {
+        job = await api(`/api/jobs/${id}`);
+      } catch (e) {
+        toast(e.message, true);
+        return;
+      }
+      state.currentJobId = id;
+
+      const { text: reason, breakdown } = splitReason(job.match_reason);
+      const link = safeUrl(job.link);
+      const applyLink = safeUrl(job.apply_link);
+
+      $('drawerBody').innerHTML = `
+        <h2>${esc(job.title)}</h2>
+        <div class="company-line">${esc(job.company || '未知公司')}</div>
+
+        <div class="props">
+          <div class="prop"><div class="k">匹配度</div><div class="v">${scoreBadge(job)}${job.match_advice ? `<span class="advice">${esc(job.match_advice)}</span>` : ''}</div></div>
+          <div class="prop"><div class="k">状态</div><div class="v">${statusTag(job.status)}</div></div>
+          <div class="prop"><div class="k">城市</div><div class="v">${esc(job.city) || '—'}</div></div>
+          ${job.salary || job.job_type ? `<div class="prop"><div class="k">薪资 / 类型</div><div class="v">${esc([job.salary, job.job_type].filter(Boolean).join(' · '))}</div></div>` : ''}
+          ${job.company_scale || job.company_industry ? `<div class="prop"><div class="k">公司</div><div class="v">${esc([job.company_industry, job.company_scale].filter(Boolean).join(' · '))}</div></div>` : ''}
+          <div class="prop"><div class="k">来源</div><div class="v">${esc(job.source) || '—'}</div></div>
+          <div class="prop"><div class="k">原始链接</div><div class="v">${link ? `<a href="${esc(link)}" target="_blank" rel="noopener">${esc(link)}</a>` : '—'}</div></div>
+          ${applyLink && applyLink !== link ? `<div class="prop"><div class="k">申请链接</div><div class="v"><a href="${esc(applyLink)}" target="_blank" rel="noopener">${esc(applyLink)}</a></div></div>` : ''}
+          <div class="prop"><div class="k">采集时间</div><div class="v">${esc(job.created_at)}</div></div>
+          ${job.applied_at ? `<div class="prop"><div class="k">投递时间</div><div class="v">${esc(job.applied_at)}</div></div>` : ''}
+        </div>
+
+        <div class="section-title">AI 分析</div>
+        <div class="callout"><span>💡</span><div>${reason ? esc(reason) : 'AI 正在分析中，稍后刷新查看…'}</div></div>
+        ${breakdown ? `
+          <div class="breakdown">
+            <span>简历匹配 ${breakdown.resume} × 50%</span>
+            <span>岗位偏好 ${breakdown.preference} × 30%</span>
+            <span>城市 ${breakdown.city} × 20%</span>
+          </div>` : ''}
+
+        ${kanbanSection(job)}
+
+        <div class="section-title">岗位描述</div>
+        <div class="jd">${esc(job.jd_text) || '<span style="color:var(--light)">列表页未提供 JD，可打开原链接查看完整描述</span>'}</div>
+      `;
+
+      const applied = job.status === 'applied';
+      $('drawerFoot').innerHTML = `
+        <button class="btn primary" data-act="apply" ${applied ? 'disabled' : ''}>${applied ? '已投递' : '投递'}</button>
+        ${!applied ? '<button class="btn" data-act="applied" title="已经在官网等地方投过了，直接记为已投递">📮 已投过，直接标记</button>' : ''}
+        ${job.status !== 'approved' && !applied ? '<button class="btn" data-act="approved">✓ 加入待投递</button>' : ''}
+        ${job.status !== 'rejected' ? '<button class="btn danger" data-act="rejected">✕ 拒绝</button>' : ''}
+        ${job.status !== 'pending' ? '<button class="btn" data-act="pending">重置为待确认</button>' : ''}
+        <div style="flex:1"></div>
+        <button class="btn" data-act="ask">💬 问 AI</button>
+        <button class="btn" data-act="rematch">AI 重新分析</button>
+      `;
+      $('drawerFoot').onclick = (e) => {
+        const act = e.target.closest('[data-act]')?.dataset.act;
+        if (!act) return;
+        if (act === 'apply') applyJob(job);
+        else if (act === 'ask') openChat(job);
+        else if (act === 'rematch') rematch([job.id]).then(() => openDetail(job.id));
+        else setStatus(job.id, act);
+      };
+
+      $('overlay').classList.add('show');
+      $('drawer').classList.add('show');
+      $('drawer').setAttribute('aria-hidden', 'false');
+      document.body.classList.add('drawer-open');
+    }
+
+    function closeDetail() {
+      state.currentJobId = null;
+      document.body.classList.remove('drawer-open');
+      $('drawer').classList.remove('show');
+      $('drawer').setAttribute('aria-hidden', 'true');
+      if (!$('prefsModal').classList.contains('show')) $('overlay').classList.remove('show');
+    }
+
+    /* =====================================================================
+       偏好设置
+       ===================================================================== */
+
+    async function openPrefs() {
+      try {
+        const p = await api('/api/preferences');
+        $('prefRoles').value = joinList(p.target_roles);
+        $('prefCities').value = joinList(p.target_cities);
+        $('prefRolePriority').value = p.role_priority || '';
+        $('prefCityPriority').value = p.city_priority || '';
+        $('prefIndustries').value = joinList(p.target_industries);
+        $('prefAvoidCompanies').value = joinList(p.avoid_companies);
+        $('prefAvoidRoles').value = joinList(p.avoid_roles);
+        $('prefLimit').value = p.daily_limit;
+        $('overlay').classList.add('show');
+        $('prefsModal').classList.add('show');
+        $('prefsModal').setAttribute('aria-hidden', 'false');
+        setTimeout(() => $('prefRoles').focus(), 50);
+      } catch (e) {
+        toast(e.message, true);
+      }
+    }
+
+    function closePrefs() {
+      $('prefsModal').classList.remove('show');
+      $('prefsModal').setAttribute('aria-hidden', 'true');
+      if (!$('drawer').classList.contains('show')) $('overlay').classList.remove('show');
+    }
+
+    async function savePrefs() {
+      const limit = parseInt($('prefLimit').value, 10);
+      if (!limit || limit < 1 || limit > 200) {
+        toast('每日投递上限需在 1-200 之间', true);
+        return;
+      }
+      const body = {
+        target_roles: splitList($('prefRoles').value),
+        target_cities: splitList($('prefCities').value),
+        target_industries: splitList($('prefIndustries').value),
+        avoid_companies: splitList($('prefAvoidCompanies').value),
+        avoid_roles: splitList($('prefAvoidRoles').value),
+        daily_limit: limit,
+        role_priority: $('prefRolePriority').value.trim(),
+        city_priority: $('prefCityPriority').value.trim(),
+      };
+      const btn = $('savePrefsBtn');
+      btn.disabled = true;
+      try {
+        await api('/api/preferences', { method: 'POST', body });
+        closePrefs();
+        if ($('prefRematch').checked) {
+          await rematch(null);
+        } else {
+          toast('偏好已保存');
+          await refreshAll();
+        }
+      } catch (e) {
+        toast(e.message, true);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    /* =====================================================================
+       按公司推荐：每家公司按推荐分展示前几个，拒绝后下一个补位，也可以换一批
+       ===================================================================== */
+
+    function setView(view, load = true) {
+      state.view = view;
+      localStorage.setItem('jh_view', view);
+      document.body.classList.toggle('view-company', view === 'company');
+      document.querySelectorAll('.view-tab').forEach((t) => t.classList.toggle('active', t.dataset.view === view));
+      if (load && view === 'company') loadReco().catch((e) => toast(e.message, true));
+    }
+
+    async function loadReco() {
+      const data = await api('/api/recommendations');
+      state.reco = data;
+      renderCompanies();
+      clearTimeout(state.recoTimer);
+      const analyzing = data.companies.some((c) => c.candidates.some((j) => j.analyzing));
+      if (data.estimating_scale || data.fetching_info || analyzing) {
+        state.recoTimer = setTimeout(() => {
+          if (state.view === 'company') loadReco().catch(() => {});
+        }, 5000);
+      }
+    }
+
+    const findCompany = (key) => [...(state.reco?.companies || []), ...(state.reco?.applied_companies || [])]
+      .find((c) => c.key === key);
+    const findCompanyIn = (list, key) => (state.reco?.[list] || []).find((c) => c.key === key);
+
+    /** 公司移进「已完成投递」后展开那一栏，滚到这家并闪一下 */
+    function revealApplied(key) {
+      if (!findCompanyIn('applied_companies', key)) return false;
+      state.appliedOpen = true;
+      renderCompanies();
+      const card = [...document.querySelectorAll('#appliedBox .co-card')].find((el) => el.dataset.key === key);
+      if (card) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        card.classList.add('flash');
+        setTimeout(() => card.classList.remove('flash'), 1600);
+      }
+      return true;
+    }
+
+    /** 已经在别处投过的岗位：直接标记已投递并同步看板 */
+    async function markRecoApplied(c, id) {
+      try {
+        const r = await api(`/api/mark_applied/${id}`, { method: 'POST' });
+        await refreshAll();
+        const moved = revealApplied(c.key);
+        toast(`已标记为已投递 🎉${r.kanban_sync ? ' ' + r.kanban_sync : ''}${moved ? '；这家已移到「已完成投递」' : ''}`);
+      } catch (err) {
+        toast(err.message, true);
+        loadRisk().catch(() => {});
+      }
+    }
+
+    /** 这家公司投完了：待投递的全部记为已投递，同步看板，移到「已完成投递」 */
+    async function markCompanyDone(c) {
+      const pending = c.picked.filter((j) => j.status === 'approved');
+      const msg = pending.length
+        ? `「${c.name}」投完了？\n\n会把待投递的 ${pending.length} 个岗位（${pending.map((j) => j.title).join('、')}）标记为已投递，同步到秋招看板，并把这家移到「已完成投递」。`
+        : `「${c.name}」投完了？\n\n会在秋招看板记一张「已投递」卡片，并把这家移到「已完成投递」。\n这里没有选中的岗位，投了哪些岗位可以之后在看板里补上。`;
+      if (!confirm(msg)) return;
+      try {
+        const r = await api('/api/companies/applied', { method: 'POST', body: { key: c.key } });
+        await refreshAll();
+        if (r.error) {
+          toast(r.applied ? `已标记 ${r.applied} 个，剩下的没标上：${r.error}` : r.error, true);
+        } else {
+          revealApplied(c.key);
+          toast(`「${r.company}」投完啦 🎉${r.kanban_sync ? ' ' + r.kanban_sync : ''}`);
+        }
+      } catch (err) {
+        toast(err.message, true);
+      }
+    }
+
+    /** 当前展示的这一批：从 offset 开始取 per_company 个，翻到底后回到第一批 */
+    function shownCandidates(c) {
+      const per = state.reco.per_company;
+      let off = state.recoOffset[c.key] || 0;
+      if (off >= c.candidates.length) off = 0;
+      state.recoOffset[c.key] = off;
+      return c.candidates.slice(off, off + per);
+    }
+
+    function factorTip(j) {
+      const f = j.factors;
+      const w = state.reco.weights;
+      return [
+        `推荐分 ${j.priority} =`,
+        `AI 匹配 ${j.analyzing ? '分析中（暂按 60）' : f.match} × ${w.match * 100}%`,
+        `岗位方向 ${f.role.score}（${f.role.label}）× ${w.role * 100}%`,
+        `城市 ${f.city.score}（${f.city.label}）× ${w.city * 100}%`,
+        `公司规模 ${f.company.score}（${f.company.label}）× ${w.company * 100}%`,
+        `岗位 title ${f.title.score}${f.title.labels.length ? `（${f.title.labels.join('、')}）` : ''} × ${w.title * 100}%`,
+        j.penalty ? `${j.job_type}岗 −${j.penalty}（秋招优先全职）` : '',
+      ].filter(Boolean).join('\n');
+    }
+
+    function recoChips(j) {
+      const f = j.factors;
+      const level = (s) => (s >= 100 ? 'good' : s >= 70 ? '' : s >= 50 ? 'warn' : 'bad');
+      const chips = [
+        `<span class="chip ${level(f.role.score)}">${esc(f.role.label)}</span>`,
+        `<span class="chip ${level(f.city.score)}">📍${esc(f.city.label)}</span>`,
+      ];
+      if (j.salary) chips.push(`<span class="chip">${esc(j.salary)}</span>`);
+      if (j.job_type) chips.push(`<span class="chip ${j.job_type === '校招' ? 'good' : 'warn'}">${esc(j.job_type)}</span>`);
+      f.title.labels.filter((l) => l !== '校招').forEach((l) => {
+        chips.push(`<span class="chip ${['管培生', '经理 / 策划'].includes(l) ? 'good' : 'bad'}">${esc(l)}</span>`);
+      });
+      if (j.away_but_good) chips.push('<span class="chip good">外地好岗，可考虑</span>');
+      chips.push(j.analyzing
+        ? '<span class="chip">AI 分析中…</span>'
+        : `<span class="chip">匹配 ${esc(j.match_score)}${j.match_advice ? ' · ' + esc(j.match_advice) : ''}</span>`);
+      return chips.join('');
+    }
+
+    function recoRow(j, rank) {
+      const url = safeUrl(j.link) || safeUrl(j.apply_link);
+      return `
+        <div class="reco-row" data-id="${j.id}">
+          <span class="reco-rank">${rank}</span>
+          <span class="prio" title="${esc(factorTip(j))}">${j.priority}</span>
+          <div class="reco-main">
+            <span class="reco-title" data-reco="detail">${esc(j.title)}</span>
+            <div class="reco-sub">${recoChips(j)}</div>
+          </div>
+          <div class="reco-actions">
+            ${url ? `<a class="btn" href="${esc(url)}" target="_blank" rel="noopener">↗ 打开</a>` : '<button class="btn" disabled>无链接</button>'}
+            <button class="btn primary" data-reco="pick">✓ 选它</button>
+            <button class="btn danger" data-reco="skip">✕ 不要</button>
+          </div>
+        </div>`;
+    }
+
+    /** 限投数：null 未知，0 不限；已选 = 待投递 + 已投递 */
+    const limitFull = (c) => c.apply_limit > 0 && c.picked.length >= c.apply_limit;
+
+    function limitBadge(c) {
+      const n = c.picked.length;
+      if (c.apply_limit == null) {
+        return `<button class="limit-badge unknown" data-co="limit" title="牛客不提供限投数，看一眼校招公告或官网投递须知后点这里填写">限投 ? 点击填写${n ? ` · 已选 ${n}` : ''}</button>`;
+      }
+      const text = c.apply_limit === 0
+        ? '不限投递数'
+        : `限投 ${c.apply_limit} · 已选 ${n}${limitFull(c) ? '（已满）' : ''}`;
+      return `<button class="limit-badge${limitFull(c) ? ' full' : ''}" data-co="limit" title="你填写的，点击修改">${text}</button>`
+        + (c.limit_note ? `<span class="limit-note">${esc(c.limit_note)}</span>` : '');
+    }
+
+    /** 网申时间（来自牛客）：3 天内标红；只有实习 / 往年批次信息的不算截止 */
+    function deadlineChip(c) {
+      if (!c.apply_status) return '';
+      const batch = c.batch_name || '校招';
+      const tip = `牛客登记的${batch}网申时间：${c.apply_period}`;
+      if (c.apply_status === 'closed') return `<span class="chip" title="${esc(tip)}">${esc(batch)}网申已于 ${esc(c.deadline)} 截止</span>`;
+      if (c.apply_status === 'other') return `<span class="chip" title="${esc(tip)}">牛客上只有「${esc(batch)}」的网申信息（已结束），今年秋招看官网</span>`;
+      const left = c.days_left === 0 ? '今天截止' : `还剩 ${c.days_left} 天`;
+      const level = c.apply_status === 'closing' ? 'bad' : c.days_left <= 7 ? 'warn' : '';
+      const label = /秋招/.test(batch) ? '网申' : `${batch}网申`;
+      return `<span class="chip ${level}" title="${esc(tip)}">${esc(label)}至 ${esc(c.deadline)}（${left}）</span>`;
+    }
+
+    async function editLimit(c) {
+      const current = c.apply_limit != null ? String(c.apply_limit) : '';
+      const input = prompt(
+        `「${c.name}」每人限投几个岗位？\n填数字，0 表示不限；清空后点确定 = 清除。\n（一般写在校招公告或官网的「投递须知」里）`,
+        current
+      );
+      if (input === null) return;
+      const text = input.trim();
+      if (text && !/^\d{1,2}$/.test(text)) {
+        toast('请填 0～20 的数字', true);
+        return;
+      }
+      try {
+        await api('/api/companies/limit', { method: 'POST', body: { key: c.key, apply_limit: text ? Number(text) : null } });
+        toast(text ? `已记下：${c.name} ${text === '0' ? '不限投递数' : `限投 ${text} 个`}` : `已清除 ${c.name} 的限投数`);
+        await loadReco();
+      } catch (err) {
+        toast(err.message, true);
+      }
+    }
+
+    function companyCard(c) {
+      const per = state.reco.per_company;
+      const shown = shownCandidates(c);
+      const off = state.recoOffset[c.key] || 0;
+      const more = safeUrl(c.more_link);
+      const meta = [
+        c.scale ? `${c.scale}${c.scale_source === 'AI估算' ? '（AI 估算）' : ''}` : '规模未知',
+        c.industry,
+        `共 ${c.total} 个岗位`,
+        c.picked.length && `已选 ${c.picked.length}`,
+        c.rejected && `已拒绝 ${c.rejected}`,
+        c.blacklisted && `黑名单 ${c.blacklisted}`,
+      ].filter(Boolean).join(' · ');
+
+      const picked = c.picked.length ? `
+        <div class="co-picked">✓ 已选：${c.picked.map((j) => {
+          const url = safeUrl(j.apply_link) || safeUrl(j.link);
+          const actions = j.status === 'approved'
+            ? '<button class="btn" data-reco="apply" title="打开网申页，投完回来确认">去投递</button>'
+              + '<button class="btn" data-reco="applied" title="已经投过了：直接记为已投递，并同步到秋招看板">✓ 已投递</button>'
+            : '';
+          return `<span class="item" data-id="${j.id}">${url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(j.title)}</a>` : esc(j.title)}${statusTag(j.status)}${actions}</span>`;
+        }).join('')}</div>` : '';
+      const inMain = !!findCompanyIn('companies', c.key);
+      const doneBtn = inMain
+        ? '<button class="btn" data-co="done" title="这家公司投完了：待投递的岗位记为已投递，同步秋招看板，移到「已完成投递」">✅ 这家投完了</button>'
+        : '';
+      // 看板里已有这家、只是待投递还没投完：不再推荐新岗位
+      if (inMain && c.kanban) {
+        return `
+        <div class="co-card" data-key="${esc(c.key)}">
+          <div class="co-head">
+            <span class="co-name">${esc(c.name)}</span>
+            <span class="co-meta">${esc(meta)}</span>
+            <span class="kanban-chip" title="秋招看板里的卡片：${esc(c.kanban.company)}">看板：${esc(c.kanban.status_label)}${c.kanban.positions ? ' · ' + esc(c.kanban.positions) : ''}</span>
+            <span class="spacer"></span>
+            ${doneBtn}
+          </div>
+          ${picked}
+          <div class="co-foot"><span>这家已经在秋招看板里了，不再推荐新岗位；上面待投递的投完后点「✅ 这家投完了」</span></div>
+        </div>`;
+      }
+
+      const rows = shown.map((j, i) => recoRow(j, off + i + 1)).join('');
+
+      const foot = [];
+      if (limitFull(c) && c.candidates.length) {
+        foot.push(`<span style="color:var(--red)">已选满限投数 ${c.apply_limit} 个，再选多半白投；想换就先把已选的改回待确认</span>`);
+      }
+      if (c.candidates.length > per) {
+        const rest = c.candidates.length - (off + shown.length);
+        foot.push(`<button class="btn" data-co="next">🔄 换一批${rest > 0 ? `（后面还有 ${rest} 个）` : '（回到第一批）'}</button>`);
+      }
+      if (shown.length) foot.push(`<button class="btn danger" data-co="rejectShown">这批都不要</button>`);
+      if (c.need_more) {
+        const n = c.candidates.length + c.picked.length;
+        foot.push(more
+          ? `<span>只采集到 ${n} 个可选岗位，不够 ${per} 个：<a href="${esc(more)}" target="_blank" rel="noopener">打开这家公司在牛客的${c.enterprise_link ? '主页' : '岗位页（点「查看其他职位」进公司主页）'}</a>，再点扩展「采集本页岗位」补全</span>`
+          : `<span>只采集到 ${n} 个可选岗位，可以去牛客搜「${esc(c.name)}」再采集一些</span>`);
+      }
+      if (!c.candidates.length) foot.push('<span>这家公司的岗位都处理完了</span>');
+
+      return `
+        <div class="co-card${c.candidates.length ? '' : ' done'}" data-key="${esc(c.key)}">
+          <div class="co-head">
+            <span class="co-name">${esc(c.name)}</span>
+            <span class="co-meta">${esc(meta)}</span>
+            ${c.kanban ? `<span class="kanban-chip" title="秋招看板里的卡片：${esc(c.kanban.company)}">看板：${esc(c.kanban.status_label)}${c.kanban.positions ? ' · ' + esc(c.kanban.positions) : ''}</span>` : limitBadge(c)}
+            ${c.kanban ? '' : deadlineChip(c)}
+            <span class="spacer"></span>
+            ${doneBtn}
+            ${safeUrl(c.notice_url) ? `<a href="${esc(safeUrl(c.notice_url))}" target="_blank" rel="noopener" title="投递规则（限投几个、志愿顺序）一般写在公告里">校招公告 ↗</a>` : ''}
+            ${safeUrl(c.official_url) ? `<a href="${esc(safeUrl(c.official_url))}" target="_blank" rel="noopener">官网投递 ↗</a>` : ''}
+            ${more ? `<a href="${esc(more)}" target="_blank" rel="noopener">${c.enterprise_link ? '牛客公司主页 ↗' : '牛客岗位页 ↗'}</a>` : ''}
+          </div>
+          ${picked}${rows}
+          ${foot.length ? `<div class="co-foot">${foot.join('')}</div>` : ''}
+        </div>`;
+    }
+
+    function renderCompanies() {
+      const data = state.reco;
+      if (!data) return;
+      const open = data.companies.filter((c) => c.candidates.length && !c.kanban).length;
+      const applied = data.applied_companies || [];
+      $('recoHead').innerHTML = `
+        <span>${data.companies.length} 家公司，${open} 家还有待选岗位${applied.length ? `（另有 ${applied.length} 家已完成投递，见页面底部）` : ''} · 每家推荐 ${data.per_company} 个，按</span>
+        <span class="prio-chip">方向 ${esc(data.role_priority || '未设置')}</span>
+        <span class="prio-chip">城市 ${esc(data.city_priority || '未设置')}</span>
+        <span>+ 公司规模 + 岗位 title + AI 匹配度 排序</span>
+        <button class="btn ghost" data-co="prefs">修改优先级</button>
+        ${data.estimating_scale ? '<span>· AI 正在估算公司规模…</span>' : ''}
+        ${data.fetching_info ? '<span>· 正在从牛客查询网申时间…</span>' : ''}`;
+      const list = data.companies.length
+        ? data.companies.map(companyCard).join('')
+        : `<div class="empty"><div class="icon">📭</div><div>${applied.length ? '采集到的公司都已经在看板里投过了，去牛客再采集一些新公司吧' : '还没有岗位，先用扩展在牛客采集一些'}</div></div>`;
+      $('recoList').innerHTML = list + (applied.length ? `
+        <details class="applied-box" id="appliedBox"${state.appliedOpen ? ' open' : ''}>
+          <summary>✅ 已完成投递的 ${applied.length} 家公司（已同步秋招看板，不再推荐）：${applied.map((c) => esc(c.name)).join('、')}</summary>
+          ${applied.map(companyCard).join('')}
+        </details>` : '');
+      $('appliedBox')?.addEventListener('toggle', (e) => { state.appliedOpen = e.target.open; });
+    }
+
+    /** 推荐里的岗位缺少 company 字段，投递 / 详情时补上 */
+    const recoJob = (c, id) => {
+      const j = [...c.candidates, ...c.picked].find((x) => x.id === id);
+      return j ? { ...j, company: c.name } : null;
+    };
+
+    $('companyView').addEventListener('click', async (e) => {
+      const btn = e.target.closest('[data-reco], [data-co]');
+      if (!btn) return;
+      if (btn.dataset.co === 'prefs') { openPrefs(); return; }
+      const card = btn.closest('.co-card');
+      const c = card && findCompany(card.dataset.key);
+      if (!c) return;
+
+      if (btn.dataset.co === 'limit') {
+        editLimit(c);
+        return;
+      }
+      if (btn.dataset.co === 'done') {
+        markCompanyDone(c);
+        return;
+      }
+      if (btn.dataset.co === 'next') {
+        state.recoOffset[c.key] = (state.recoOffset[c.key] || 0) + state.reco.per_company;
+        renderCompanies();
+        return;
+      }
+      if (btn.dataset.co === 'rejectShown') {
+        const ids = shownCandidates(c).map((j) => j.id);
+        if (!confirm(`把「${c.name}」这 ${ids.length} 个岗位都标记为不要？后面的岗位会顶上来。`)) return;
+        try {
+          await api('/api/jobs/batch_status', { method: 'POST', body: { ids, status: 'rejected' } });
+          toast(`已拒绝 ${ids.length} 个，换上 ${c.name} 的下一批`);
+          await refreshAll();
+        } catch (err) {
+          toast(err.message, true);
+        }
+        return;
+      }
+
+      const id = Number(btn.closest('[data-id]')?.dataset.id);
+      const act = btn.dataset.reco;
+      if (!id) return;
+      if (act === 'detail') openDetail(id);
+      else if (act === 'pick') {
+        if (limitFull(c) && !confirm(
+          `「${c.name}」限投 ${c.apply_limit} 个${c.limit_note ? `（${c.limit_note}）` : ''}，你已经选了 ${c.picked.length} 个。\n` +
+          '多出来的投递可能被系统拒收或直接白投，仍要选它吗？'
+        )) return;
+        setStatus(id, 'approved');
+      }
+      else if (act === 'skip') setStatus(id, 'rejected');
+      else if (act === 'apply') applyJob(recoJob(c, id));
+      else if (act === 'applied') markRecoApplied(c, id);
+    });
+
+    document.querySelectorAll('.view-tab').forEach((t) => t.addEventListener('click', () => setView(t.dataset.view)));
+
+    /* =====================================================================
+       事件绑定
+       ===================================================================== */
+
+    // 筛选
+    $('filterStatus').addEventListener('change', () => loadJobs().catch((e) => toast(e.message, true)));
+    $('filterScore').addEventListener('change', () => loadJobs().catch((e) => toast(e.message, true)));
+    let cityTimer = null;
+    $('filterCity').addEventListener('input', () => {
+      clearTimeout(cityTimer);
+      cityTimer = setTimeout(() => loadJobs().catch((e) => toast(e.message, true)), 300);
+    });
+    $('resetFilterBtn').addEventListener('click', () => {
+      $('filterStatus').value = '';
+      $('filterScore').value = '';
+      $('filterCity').value = '';
+      loadJobs().catch((e) => toast(e.message, true));
+    });
+
+    // 点击统计卡片快速筛选
+    document.querySelectorAll('.stat').forEach((el) => {
+      el.addEventListener('click', () => {
+        if (state.view !== 'list') setView('list');
+        $('filterStatus').value = el.dataset.status || '';
+        $('filterScore').value = el.dataset.score || '';
+        loadJobs().catch((e) => toast(e.message, true));
+      });
+    });
+
+    // 工具栏按钮
+    $('refreshBtn').addEventListener('click', () => refreshAll(true));
+    $('nextBtn').addEventListener('click', applyNext);
+    $('prefsBtn').addEventListener('click', openPrefs);
+
+    // 表格：事件委托处理复选框和行内按钮
+    $('jobBody').addEventListener('click', (e) => {
+      const tr = e.target.closest('tr[data-id]');
+      if (!tr) return;
+      const id = Number(tr.dataset.id);
+      const job = findJob(id);
+
+      if (e.target.classList.contains('row-check')) {
+        if (e.target.checked) state.selected.add(id);
+        else state.selected.delete(id);
+        tr.classList.toggle('selected', e.target.checked);
+        updateSelectionUI();
+        return;
+      }
+
+      const action = e.target.closest('[data-action]')?.dataset.action;
+      if (!action || !job) return;
+      if (action === 'detail') openDetail(id);
+      else if (action === 'open') openLink(job);
+      else if (action === 'apply') applyJob(job);
+    });
+
+    // 全选
+    $('checkAll').addEventListener('change', (e) => {
+      if (e.target.checked) state.jobs.forEach((j) => state.selected.add(j.id));
+      else state.selected.clear();
+      renderTable();
+    });
+
+    // 批量操作
+    document.querySelectorAll('[data-batch]').forEach((btn) => {
+      btn.addEventListener('click', () => batchStatus(btn.dataset.batch));
+    });
+    $('batchAppliedBtn').addEventListener('click', batchApplied);
+    $('batchRematchBtn').addEventListener('click', () => {
+      const ids = [...state.selected];
+      state.selected.clear();
+      rematch(ids);
+    });
+    $('clearSelBtn').addEventListener('click', () => {
+      state.selected.clear();
+      renderTable();
+    });
+
+    // 抽屉 / 弹窗关闭
+    $('closeDrawerBtn').addEventListener('click', closeDetail);
+    $('overlay').addEventListener('click', () => { closeDetail(); closePrefs(); });
+    $('cancelPrefsBtn').addEventListener('click', closePrefs);
+    $('savePrefsBtn').addEventListener('click', savePrefs);
+    $('prefsForm').addEventListener('submit', (e) => { e.preventDefault(); savePrefs(); });
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      // 焦点在聊天窗口内时只收起聊天窗口
+      if ($('chatPanel').contains(document.activeElement)) { closeChat(); return; }
+      closeDetail();
+      closePrefs();
+    });
+
+    // 切回页面时自动刷新（比如刚在扩展里采集完）
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') refreshAll();
+    });
+
+    /* =====================================================================
+       AI 顾问：实时对话
+       ===================================================================== */
+
+    const CHAT_STORAGE_KEY = 'jh_chat_history';
+    const CHAT_MAX_SAVED = 60;
+
+    const CHAT_MAX_IMAGES = 4;
+
+    const chat = {
+      messages: loadChatHistory(),  // [{role, content, images?: [缩略图], actions?: [{ok, summary}]}]
+      job: null,                    // 当前围绕的岗位 {id, company, title}
+      controller: null,             // 正在进行的请求，用于「停止」
+      pending: [],                  // 待发送的图片 [{full: 发给 AI 的压缩图, thumb: 缩略图}]
+    };
+
+    function loadChatHistory() {
+      try {
+        const data = JSON.parse(localStorage.getItem(CHAT_STORAGE_KEY) || '[]');
+        return Array.isArray(data) ? data : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    /** 缩略图比较占空间，存满时从最早的消息开始丢掉缩略图 */
+    function saveChatHistory() {
+      const saved = chat.messages.slice(-CHAT_MAX_SAVED).map((m) => ({ ...m }));
+      for (let i = 0; ; i++) {
+        try {
+          localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(saved));
+          return;
+        } catch (e) {
+          while (i < saved.length && !(saved[i].images && saved[i].images.length)) i++;
+          if (i >= saved.length) return;
+          saved[i].images = [];
+        }
+      }
+    }
+
+    // 网址：带 http(s):// 或 www. 的，以及 AI 常写的不带协议的域名（shoplazza.cn/pages/join-us）
+    const URL_RE = /(^|[^\w@\/.-])((?:https?:\/\/|www\.)[^\s<>"'`，。；！？、（）()]+|(?:[a-z0-9-]+\.)+(?:com\.cn|com|cn|net|org|io|ai|co|tech|jobs|work)(?![a-z0-9-])(?:\/[^\s<>"'`，。；！？、（）()]*)?)/gi;
+
+    /** 把已转义文本里的 Markdown 链接和网址变成可点击的链接 */
+    function linkify(html) {
+      const links = [];
+      const keep = (a) => `\u0000${links.push(a) - 1}\u0000`;
+      const anchor = (url, text) =>
+        `<a href="${/^https?:\/\//i.test(url) ? url : 'https://' + url}" target="_blank" rel="noopener">${text}</a>`;
+      return html
+        .replace(/\[([^\]\n]+)\]\(((?:https?:\/\/)?[^\s)]+)\)/g, (m, text, url) => keep(anchor(url, text)))
+        .replace(URL_RE, (m, pre, url) => {
+          const trail = (url.match(/(?:&gt;|&quot;|&#39;|[.,;:!?])+$/) || [''])[0];
+          const clean = url.slice(0, url.length - trail.length);
+          return pre + keep(anchor(clean, clean)) + trail;
+        })
+        .replace(/\u0000(\d+)\u0000/g, (m, i) => links[i]);
+    }
+
+    /** 行内 Markdown：代码、加粗、链接（输入已转义） */
+    function mdInline(s) {
+      return linkify(s
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>'));
+    }
+
+    /** 轻量 Markdown 渲染：标题、列表、代码块、段落；先整体转义，保证安全 */
+    function renderMarkdown(src) {
+      const codeBlocks = [];
+      const text = esc(src).replace(/```[\w-]*\n?([\s\S]*?)(?:```|$)/g, (m, code) => {
+        codeBlocks.push(code.replace(/\n$/, ''));
+        return `\n@@CODE${codeBlocks.length - 1}@@\n`;
+      });
+
+      const out = [];
+      let list = null;
+      const closeList = () => { if (list) { out.push(`</${list}>`); list = null; } };
+
+      for (const raw of text.split('\n')) {
+        const line = raw.trimEnd();
+        let m;
+        if ((m = line.match(/^@@CODE(\d+)@@$/))) {
+          closeList();
+          out.push(`<pre><code>${codeBlocks[m[1]]}</code></pre>`);
+        } else if ((m = line.match(/^#{1,4}\s+(.*)/))) {
+          closeList();
+          out.push(`<h4>${mdInline(m[1])}</h4>`);
+        } else if ((m = line.match(/^\s*[-*•]\s+(.*)/))) {
+          if (list !== 'ul') { closeList(); out.push('<ul>'); list = 'ul'; }
+          out.push(`<li>${mdInline(m[1])}</li>`);
+        } else if ((m = line.match(/^\s*(\d+)[.)、](?!\d)\s*(.*)/))) {
+          // 编号列表被子列表打断后，用 start 保留原编号
+          if (list !== 'ol') { closeList(); out.push(`<ol start="${m[1]}">`); list = 'ol'; }
+          out.push(`<li>${mdInline(m[2])}</li>`);
+        } else if (line.trim()) {
+          closeList();
+          out.push(`<p>${mdInline(line)}</p>`);
+        }
+      }
+      closeList();
+      return out.join('');
+    }
+
+    /** 根据是否围绕岗位给出不同的快捷问题 */
+    function chatSuggestions() {
+      if (chat.job) {
+        return ['这个岗位值得投吗？', '针对这个岗位写一段打招呼语', '这个岗位面试可能问什么？', '把这个岗位标记为待投递'];
+      }
+      return ['今天应该优先投哪几个？', '把 70 分以上的岗位标记为待投递', '我的简历有哪些短板？', '模拟一轮电商运营面试'];
+    }
+
+    /** 助手消息主体：先展示执行过的操作卡片，再展示回复文字 */
+    function assistantBody(m) {
+      const actionsHtml = (m.actions || []).map((a) =>
+        `<div class="action-card ${a.ok ? 'ok' : 'fail'}">${a.ok ? '✅' : '⚠️'} ${esc(a.summary)}</div>`
+      ).join('');
+      const typing = '<span class="typing"><i></i><i></i><i></i></span>';
+      const text = m.content ? renderMarkdown(m.content) : (m.actions && m.actions.length && !chat.controller ? '' : typing);
+      return actionsHtml + text;
+    }
+
+    /** 发给后端的历史：把执行过的操作附在文字后面，让 AI 知道之前做过什么；以前发过的图片只留个说明 */
+    function historyForApi(messages) {
+      return messages.map((m) => {
+        const actionLines = (m.actions || []).map((a) => `[已执行操作] ${a.ok ? '' : '（失败）'}${a.summary}`);
+        const imageNote = m.images && m.images.length ? `[当时附了 ${m.images.length} 张图片，已看过]` : '';
+        const content = [m.content, imageNote, ...actionLines].filter(Boolean).join('\n');
+        return { role: m.role, content };
+      }).filter((m) => m.content);
+    }
+
+    function renderChat() {
+      const box = $('chatMessages');
+      if (!chat.messages.length) {
+        box.innerHTML = `
+          <div class="chat-welcome">
+            你好！我是你的 <b>AI 求职顾问</b>，已经看过你的简历、求职偏好和岗位库。<br>
+            可以问我投递优先级、岗位分析、打招呼语、模拟面试等任何求职问题。<br>
+            也可以直接让我动手，比如「把小米的岗位都标记为拒绝」「目标城市加上广州」。<br>
+            在岗位详情页点「💬 问 AI」，我会结合那个岗位的完整 JD 回答。
+          </div>`;
+      } else {
+        box.innerHTML = chat.messages.map((m, i) => {
+          if (m.role === 'user') {
+            const pics = (m.images || []).filter((src) => /^data:image\//.test(src));
+            const imagesHtml = pics.length
+              ? `<div class="msg-images">${pics.map((src) => `<img src="${esc(src)}" alt="图片">`).join('')}</div>` : '';
+            const bubble = m.content ? `<div class="bubble">${esc(m.content)}</div>` : '';
+            return `<div class="msg user">${imagesHtml}${bubble}</div>`;
+          }
+          const streaming = chat.controller && i === chat.messages.length - 1;
+          const tools = streaming || !m.content ? '' :
+            `<div class="msg-tools"><button data-copy="${i}">复制</button></div>`;
+          return `<div class="msg assistant"><div class="bubble">${assistantBody(m)}</div>${tools}</div>`;
+        }).join('');
+      }
+      box.scrollTop = box.scrollHeight;
+
+      // 上下文条与快捷问题
+      $('chatContext').classList.toggle('show', !!chat.job);
+      if (chat.job) $('chatContextText').textContent = `📌 围绕岗位：#${chat.job.id} ${chat.job.company} · ${chat.job.title}`;
+      $('chatSuggestions').innerHTML = chat.controller ? '' :
+        chatSuggestions().map((q) => `<button type="button">${esc(q)}</button>`).join('');
+    }
+
+    /** 流式输出过程中只更新最后一条消息，避免整体重绘导致闪烁 */
+    function updateLastAssistant() {
+      const box = $('chatMessages');
+      const bubbles = box.querySelectorAll('.msg.assistant .bubble');
+      const last = bubbles[bubbles.length - 1];
+      const msg = chat.messages[chat.messages.length - 1];
+      if (!last || !msg) return;
+      const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+      last.innerHTML = assistantBody(msg);
+      if (nearBottom) box.scrollTop = box.scrollHeight;
+    }
+
+    function setChatBusy(busy) {
+      const btn = $('chatSendBtn');
+      btn.textContent = busy ? '停止' : '发送';
+      btn.classList.toggle('primary', !busy);
+    }
+
+    async function sendChat(text, images = []) {
+      const content = (text || '').trim();
+      if ((!content && !images.length) || chat.controller) return;
+
+      chat.messages.push(images.length ? { role: 'user', content, images: images.map((p) => p.thumb) } : { role: 'user', content });
+      const reply = { role: 'assistant', content: '', actions: [] };
+      chat.messages.push(reply);
+      chat.controller = new AbortController();
+      setChatBusy(true);
+      renderChat();
+
+      // 处理后端推送的单个事件
+      let textAfterAction = false;
+      const handleEvent = (evt) => {
+        if (evt.type === 'text') {
+          // 操作之后的文字与之前的文字分段显示
+          if (textAfterAction && reply.content) reply.content += '\n\n';
+          textAfterAction = false;
+          reply.content += evt.content;
+        } else if (evt.type === 'action') {
+          reply.actions.push({ ok: evt.ok, summary: evt.summary });
+          textAfterAction = true;
+          if (evt.refresh) {
+            refreshAll();
+            if (state.currentJobId) openDetail(state.currentJobId);
+          }
+        } else if (evt.type === 'error') {
+          reply.content += `${reply.content ? '\n\n' : ''}⚠️ ${evt.message}`;
+        }
+        updateLastAssistant();
+      };
+
+      try {
+        const history = historyForApi(chat.messages.slice(0, -1)).slice(-20);
+        if (images.length) history[history.length - 1] = { role: 'user', content, images: images.map((p) => p.full) };
+        const resp = await fetch(API + '/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: history, job_id: chat.job ? chat.job.id : null }),
+          signal: chat.controller.signal,
+        });
+        if (!resp.ok) {
+          const data = await resp.json().catch(() => null);
+          throw new Error((data && data.detail) || `请求失败（HTTP ${resp.status}）`);
+        }
+        // 响应为 NDJSON：每行一个 JSON 事件
+        const reader = resp.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          buffer += done ? decoder.decode() : decoder.decode(value, { stream: true });
+          let idx;
+          while ((idx = buffer.indexOf('\n')) >= 0) {
+            const line = buffer.slice(0, idx).trim();
+            buffer = buffer.slice(idx + 1);
+            if (line) handleEvent(JSON.parse(line));
+          }
+          if (done) break;
+        }
+        if (buffer.trim()) handleEvent(JSON.parse(buffer));
+      } catch (e) {
+        if (e.name === 'AbortError') {
+          reply.content += reply.content ? '\n\n（已停止生成）' : '（已停止生成）';
+        } else {
+          const msg = e instanceof TypeError ? '无法连接后端服务，请确认已启动' : e.message;
+          reply.content += `${reply.content ? '\n\n' : ''}⚠️ ${msg}`;
+        }
+      } finally {
+        chat.controller = null;
+        if (!reply.content && !reply.actions.length) reply.content = '（没有收到回复，请重试）';
+        setChatBusy(false);
+        saveChatHistory();
+        renderChat();
+      }
+    }
+
+    /** 打开聊天窗口；传入岗位时围绕该岗位对话 */
+    function openChat(job) {
+      if (job) chat.job = { id: job.id, company: job.company || '未知公司', title: job.title || '' };
+      $('chatPanel').classList.add('show');
+      $('chatPanel').setAttribute('aria-hidden', 'false');
+      $('chatLauncher').classList.add('hidden');
+      renderChat();
+      setTimeout(() => $('chatInput').focus(), 50);
+    }
+
+    function closeChat() {
+      $('chatPanel').classList.remove('show');
+      $('chatPanel').setAttribute('aria-hidden', 'true');
+      $('chatLauncher').classList.remove('hidden');
+    }
+
+    /** 输入框高度随内容自适应 */
+    function autosizeChatInput() {
+      const el = $('chatInput');
+      el.style.height = 'auto';
+      el.style.height = `${Math.min(el.scrollHeight, 140)}px`;
+    }
+
+    $('chatLauncher').addEventListener('click', () => openChat());
+    $('chatCloseBtn').addEventListener('click', closeChat);
+    $('chatClearBtn').addEventListener('click', () => {
+      if (chat.controller) chat.controller.abort();
+      chat.messages = [];
+      saveChatHistory();
+      renderChat();
+    });
+    $('chatContextClear').addEventListener('click', () => { chat.job = null; renderChat(); });
+
+    $('chatForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (chat.controller) { chat.controller.abort(); return; }
+      const input = $('chatInput');
+      const text = input.value;
+      if (!text.trim() && !chat.pending.length) return;
+      const images = chat.pending;
+      input.value = '';
+      chat.pending = [];
+      renderChatPreviews();
+      autosizeChatInput();
+      sendChat(text, images);
+    });
+
+    /* ---------- 发图片：按钮选图 / 粘贴截图 / 拖进聊天窗口 ---------- */
+
+    function loadImageFile(file) {
+      return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('这张图片读不出来')); };
+        img.src = url;
+      });
+    }
+
+    /** 按像素总量压缩：长截图保留足够的宽度，文字才认得清 */
+    function shrinkImage(img, maxPixels, maxSide, quality) {
+      const w = img.naturalWidth;
+      const h = img.naturalHeight;
+      const s = Math.min(1, Math.sqrt(maxPixels / (w * h)), maxSide / Math.max(w, h));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(w * s));
+      canvas.height = Math.max(1, Math.round(h * s));
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      return canvas.toDataURL('image/jpeg', quality);
+    }
+
+    async function addChatImages(files) {
+      for (const file of files) {
+        if (!file.type.startsWith('image/')) continue;
+        if (chat.pending.length >= CHAT_MAX_IMAGES) { toast(`一次最多发 ${CHAT_MAX_IMAGES} 张图`, true); break; }
+        try {
+          const img = await loadImageFile(file);
+          chat.pending.push({ full: shrinkImage(img, 3000000, 4096, 0.85), thumb: shrinkImage(img, 120000, 400, 0.7) });
+        } catch (e) {
+          toast(e.message, true);
+        }
+      }
+      renderChatPreviews();
+      $('chatInput').focus();
+    }
+
+    function renderChatPreviews() {
+      const box = $('chatPreviews');
+      box.classList.toggle('show', chat.pending.length > 0);
+      box.innerHTML = chat.pending.map((p, i) =>
+        `<div class="chat-preview"><img src="${p.thumb}" alt=""><button type="button" data-remove="${i}" title="移除">×</button></div>`
+      ).join('');
+    }
+
+    $('chatPreviews').addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-remove]');
+      if (!btn) return;
+      chat.pending.splice(Number(btn.dataset.remove), 1);
+      renderChatPreviews();
+    });
+    $('chatAttachBtn').addEventListener('click', () => $('chatFile').click());
+    $('chatFile').addEventListener('change', (e) => {
+      addChatImages([...e.target.files]);
+      e.target.value = '';
+    });
+    $('chatInput').addEventListener('paste', (e) => {
+      const files = [...((e.clipboardData && e.clipboardData.files) || [])].filter((f) => f.type.startsWith('image/'));
+      if (files.length) { e.preventDefault(); addChatImages(files); }
+    });
+    $('chatPanel').addEventListener('dragover', (e) => {
+      if ([...((e.dataTransfer && e.dataTransfer.items) || [])].some((it) => it.kind === 'file')) {
+        e.preventDefault();
+        $('chatPanel').classList.add('dragover');
+      }
+    });
+    $('chatPanel').addEventListener('dragleave', (e) => {
+      if (!$('chatPanel').contains(e.relatedTarget)) $('chatPanel').classList.remove('dragover');
+    });
+    $('chatPanel').addEventListener('drop', (e) => {
+      e.preventDefault();
+      $('chatPanel').classList.remove('dragover');
+      const files = [...((e.dataTransfer && e.dataTransfer.files) || [])].filter((f) => f.type.startsWith('image/'));
+      if (files.length) addChatImages(files);
+      else toast('只能拖图片进来', true);
+    });
+    $('chatInput').addEventListener('input', autosizeChatInput);
+    $('chatInput').addEventListener('keydown', (e) => {
+      // Enter 发送；Shift+Enter 换行；输入法组字过程中不触发
+      if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+        e.preventDefault();
+        $('chatForm').requestSubmit();
+      }
+    });
+    $('chatSuggestions').addEventListener('click', (e) => {
+      const btn = e.target.closest('button');
+      if (btn) sendChat(btn.textContent);
+    });
+    $('chatMessages').addEventListener('click', async (e) => {
+      const idx = e.target.dataset.copy;
+      if (idx === undefined) return;
+      try {
+        await navigator.clipboard.writeText(chat.messages[Number(idx)].content);
+        toast('已复制');
+      } catch (err) {
+        toast('复制失败，请手动选择文本', true);
+      }
+    });
+
+    // 首次加载
+    setView(state.view, false);
+    refreshAll();
+  </script>
+</body>
+</html>

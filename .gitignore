@@ -1,0 +1,27 @@
+# 白名单：默认忽略一切，只放行代码、示例和文档
+# 简历、岗位库、备份、.env 等私人数据永远不会被提交
+/*
+!/.gitignore
+!/.env.example
+!/README.md
+!/requirements.txt
+!/启动求职助手.command
+!/backend/
+!/frontend/
+!/extension/
+!/desktop-pet/
+!/demo/
+!/docs/
+
+/backend/*
+!/backend/*.py
+!/backend/resume.example.json
+
+/desktop-pet/*
+!/desktop-pet/main.swift
+!/desktop-pet/build.sh
+
+__pycache__/
+.DS_Store
+*.bak
+*.log
