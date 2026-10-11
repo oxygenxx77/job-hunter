@@ -237,3 +237,7 @@ cd /tmp/job-hunter-demo/backend && uvicorn main:app --port 8011
 - 所有数据（简历、岗位库、聊天记录）只存在本机；`resume.json` 会整份发给 AI，所以示例简历里没有联系方式，从扩展同步简历时也不会带上手机号、邮箱、身份证号、住址
 - 仓库里的 `.gitignore` 是白名单式的，私人数据文件默认不会进入 git
 - 截图和 `demo/` 里的数据全部是虚构的
+
+## 许可证
+
+[MIT](LICENSE)

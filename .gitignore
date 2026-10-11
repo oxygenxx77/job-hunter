@@ -4,6 +4,7 @@
 !/.gitignore
 !/.env.example
 !/README.md
+!/LICENSE
 !/requirements.txt
 !/启动求职助手.command
 !/backend/
