@@ -189,6 +189,26 @@ def init_db() -> None:
         )
         conn.execute("CREATE INDEX IF NOT EXISTS idx_risk_created ON risk_logs(created_at)")
 
+        # 简历填充报告：扩展每次填完上报哪些字段没填上、哪些标签不认识，用来改进填充规则
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS fill_reports (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                host        TEXT NOT NULL DEFAULT '',
+                path        TEXT DEFAULT '',
+                version     TEXT DEFAULT '',
+                job_id      INTEGER,
+                filled      INTEGER DEFAULT 0,
+                failed      INTEGER DEFAULT 0,
+                unknown     INTEGER DEFAULT 0,
+                report      TEXT NOT NULL,
+                resolved_at TEXT,
+                created_at  TEXT NOT NULL
+            )
+            """
+        )
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_fill_reports_resolved ON fill_reports(resolved_at)")
+
         # 确保存在默认偏好记录
         row = conn.execute("SELECT id FROM preferences WHERE id = 1").fetchone()
         if row is None:
@@ -652,6 +672,66 @@ def list_risk_logs(limit: int = 20) -> List[Dict[str, Any]]:
             "SELECT * FROM risk_logs ORDER BY id DESC LIMIT ?", (limit,)
         ).fetchall()
     return [dict(r) for r in rows]
+
+
+def add_fill_report(report: Dict[str, Any], created_at: Optional[str] = None) -> int:
+    """保存一份填充报告（report 已由调用方清洗过），返回新记录 id"""
+    with get_conn() as conn:
+        cur = conn.execute(
+            """
+            INSERT INTO fill_reports (host, path, version, job_id, filled, failed, unknown, report, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                _clean(report.get("host")),
+                _clean(report.get("path")),
+                _clean(report.get("version")),
+                report.get("job_id") if isinstance(report.get("job_id"), int) else None,
+                int(report.get("filled") or 0),
+                len(report.get("failed") or []),
+                sum(1 for f in report.get("leftover") or [] if f.get("kind") == "unknown"),
+                json.dumps(report, ensure_ascii=False),
+                created_at or now_str(),
+            ),
+        )
+        return int(cur.lastrowid)
+
+
+def list_fill_reports(include_resolved: bool = False, limit: int = 500) -> List[Dict[str, Any]]:
+    """读取填充报告（新的在前），report 字段解析成 dict"""
+    where = "" if include_resolved else "WHERE resolved_at IS NULL"
+    with get_conn() as conn:
+        rows = conn.execute(
+            f"SELECT * FROM fill_reports {where} ORDER BY id DESC LIMIT ?", (limit,)
+        ).fetchall()
+    out = []
+    for row in rows:
+        item = dict(row)
+        try:
+            item["report"] = json.loads(item["report"])
+        except (TypeError, ValueError):
+            item["report"] = {}
+        out.append(item)
+    return out
+
+
+def resolve_fill_reports(ids: Optional[List[int]] = None, up_to_id: Optional[int] = None) -> int:
+    """把报告标记为已处理（规则已经改过），之后的汇总默认不再统计它们"""
+    with get_conn() as conn:
+        if ids:
+            marks = ",".join("?" * len(ids))
+            cur = conn.execute(
+                f"UPDATE fill_reports SET resolved_at = ? WHERE resolved_at IS NULL AND id IN ({marks})",
+                (now_str(), *ids),
+            )
+        elif up_to_id is not None:
+            cur = conn.execute(
+                "UPDATE fill_reports SET resolved_at = ? WHERE resolved_at IS NULL AND id <= ?",
+                (now_str(), up_to_id),
+            )
+        else:
+            return 0
+        return cur.rowcount
 
 
 def count_risk_events_today(event_type: str) -> int:

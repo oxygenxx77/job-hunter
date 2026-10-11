@@ -160,6 +160,17 @@ class WriteIn(BaseModel):
     max_chars: int = Field(300, ge=50, le=2000)
 
 
+class FillReportsIn(BaseModel):
+    """扩展上报的填充报告（一次可以带上之前没发出去的几份）"""
+    reports: List[Dict[str, Any]] = Field(default_factory=list, max_length=50)
+
+
+class ResolveReportsIn(BaseModel):
+    """把报告标记为已处理：给 ids，或者给 up_to_id（这个 id 及之前的全部）"""
+    ids: List[int] = Field(default_factory=list)
+    up_to_id: Optional[int] = None
+
+
 def _dump(model: BaseModel) -> Dict[str, Any]:
     """兼容 pydantic v1 / v2 的模型转 dict"""
     return model.model_dump() if hasattr(model, "model_dump") else model.dict()
@@ -416,6 +427,30 @@ def autofill_write(payload: WriteIn):
         raise HTTPException(400, str(e))
     except RuntimeError as e:
         raise HTTPException(502, str(e))
+
+
+@app.post("/api/autofill/report")
+def autofill_report(payload: FillReportsIn):
+    """扩展每次填完上报：哪些字段没填上、哪些标签不认识（不含简历内容）"""
+    return {"saved": autofill.save_reports(payload.reports)}
+
+
+@app.get("/api/autofill/reports/digest")
+def autofill_report_digest(include_resolved: bool = False):
+    """按问题汇总未处理的填充报告，改填充规则时先看这个"""
+    return autofill.report_digest(include_resolved)
+
+
+@app.get("/api/autofill/reports")
+def autofill_reports(limit: int = Query(20, ge=1, le=200), include_resolved: bool = False):
+    """最近的原始填充报告"""
+    return {"reports": db.list_fill_reports(include_resolved, limit)}
+
+
+@app.post("/api/autofill/reports/resolve")
+def autofill_reports_resolve(payload: ResolveReportsIn):
+    """规则改完后把对应报告标记为已处理"""
+    return {"resolved": db.resolve_fill_reports(payload.ids, payload.up_to_id)}
 
 
 # ---------------------------------------------------------------------------

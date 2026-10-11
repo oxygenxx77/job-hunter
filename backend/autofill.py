@@ -5,6 +5,7 @@
      只取白名单字段（手机号、身份证号、住址等隐私信息不会进入 resume.json，也就不会发给 AI）
   2. 岗位识别：扩展弹窗打开时告诉后端当前网页地址，后端找出对应的岗位（含秋招看板进度）
   3. AI 文书：按岗位 JD 为扩展生成定制的自我评价、开放题回答
+  4. 填充报告：扩展每次填完上报没填上的字段和不认识的标签，汇总后用来改进填充规则
 """
 
 import json
@@ -312,3 +313,130 @@ def write_text(job_id: int, kind: str, question: str = "", max_chars: int = 300)
     prompt = f"## 目标岗位\n{_job_text(job)}\n\n## 我的简历\n{resume}\n\n## 任务\n{task}"
     text = ai_match.call_text(WRITER_SYSTEM, prompt)
     return re.sub(r"\n{3,}", "\n\n", text.strip().strip("\"“”「」"))
+
+
+# ---------------------------------------------------------------------------
+# 填充报告
+# ---------------------------------------------------------------------------
+
+MAX_REPORT_ITEMS = 80
+MAX_REPORT_BYTES = 200_000
+REPORT_FIELDS = ("host", "path", "version", "frame", "job_id", "filled", "stats", "failed", "leftover")
+# 扩展已经把简历内容换成占位符了；这里再兜底抹掉手机号、邮箱、身份证号格式的字符串
+_SECRET_PATTERNS = [
+    re.compile(r"(?<!\d)1[3-9]\d{9}(?!\d)"),
+    re.compile(r"[\w.+-]+@[\w-]+(\.[\w-]+)+"),
+    re.compile(r"(?<!\d)\d{17}[\dXx](?!\d)"),
+]
+
+
+def _scrub(value: Any) -> Any:
+    """递归处理报告：字符串截断并抹掉隐私格式，列表限制条数"""
+    if isinstance(value, str):
+        for pattern in _SECRET_PATTERNS:
+            value = pattern.sub("‹隐私›", value)
+        return value[:600]
+    if isinstance(value, list):
+        return [_scrub(v) for v in value[:MAX_REPORT_ITEMS]]
+    if isinstance(value, dict):
+        return {str(k)[:40]: _scrub(v) for k, v in list(value.items())[:60]}
+    if isinstance(value, (int, float, bool)) or value is None:
+        return value
+    return str(value)[:600]
+
+
+def save_reports(reports: List[Dict[str, Any]]) -> int:
+    """保存扩展上报的填充报告，返回保存的份数；格式不对或过大的直接跳过"""
+    saved = 0
+    for raw in reports:
+        if not isinstance(raw, dict) or not raw.get("host"):
+            continue
+        report = _scrub({k: raw.get(k) for k in REPORT_FIELDS})
+        if len(json.dumps(report, ensure_ascii=False).encode()) > MAX_REPORT_BYTES:
+            logger.warning("填充报告过大，已跳过：%s", report.get("host"))
+            continue
+        created_at = None
+        if isinstance(raw.get("at"), (int, float)) and raw["at"] > 0:
+            created_at = datetime.fromtimestamp(raw["at"] / 1000).strftime("%Y-%m-%d %H:%M:%S")
+        db.add_fill_report(report, created_at)
+        saved += 1
+    return saved
+
+
+def _bucket(groups: Dict[Any, Dict[str, Any]], key: Any, host: str, sample: Dict[str, Any]) -> Dict[str, Any]:
+    g = groups.setdefault(key, {"count": 0, "sites": set(), "samples": []})
+    g["count"] += 1
+    g["sites"].add(host)
+    if len(g["samples"]) < 3 and host not in {s.get("host") for s in g["samples"]}:
+        g["samples"].append(dict(sample, host=host))
+    return g
+
+
+def _ranked(groups: Dict[Any, Dict[str, Any]], extra=None) -> List[Dict[str, Any]]:
+    out = []
+    for key, g in groups.items():
+        item = {"sites": sorted(g["sites"]), "count": g["count"], "samples": g["samples"]}
+        item.update(extra(key, g) if extra else {})
+        out.append(item)
+    out.sort(key=lambda i: (len(i["sites"]), i.get("required", False), i["count"]), reverse=True)
+    return out
+
+
+def report_digest(include_resolved: bool = False) -> Dict[str, Any]:
+    """
+    把未处理的填充报告按问题汇总，给改规则的人（或 AI）看：
+    - unknown：填完仍是空的、标签没被识别的字段 → 多半要往词典里加叫法
+    - failed：识别了也尝试填了，但没填上 → 要看 via / trace 修对应组件的填法
+    - empty：识别了但没尝试填（区块没定位到、条目不够等）
+    - no_data：识别了，但简历里没有这项 → 提醒补简历，不是代码问题
+    """
+    rows = db.list_fill_reports(include_resolved=include_resolved)
+    unknown: Dict[Any, Dict[str, Any]] = {}
+    failed: Dict[Any, Dict[str, Any]] = {}
+    empty: Dict[Any, Dict[str, Any]] = {}
+    no_data: Dict[Any, Dict[str, Any]] = {}
+    sites: Dict[str, Dict[str, Any]] = {}
+
+    for row in rows:
+        rep = row["report"] or {}
+        host = row["host"]
+        site = sites.setdefault(host, {"host": host, "reports": 0, "filled": 0, "failed": 0, "unknown": 0,
+                                       "versions": set(), "last": row["created_at"]})
+        site["reports"] += 1
+        site["filled"] += row["filled"] or 0
+        site["failed"] += row["failed"] or 0
+        site["unknown"] += row["unknown"] or 0
+        site["versions"].add(row["version"])
+
+        for f in rep.get("failed") or []:
+            g = _bucket(failed, (f.get("key"), f.get("via")), host,
+                        {"label": f.get("label"), "want": f.get("want"), "error": f.get("error"),
+                         "trace": f.get("trace"), "report_id": row["id"]})
+            g.setdefault("labels", set()).add(f.get("label") or "")
+        for f in rep.get("leftover") or []:
+            kind = f.get("kind")
+            sample = {k: f.get(k) for k in ("tag", "type", "ph", "select", "date", "chain", "n")}
+            sample["report_id"] = row["id"]
+            if kind == "unknown":
+                g = _bucket(unknown, f.get("label") or "", host, sample)
+                g["required"] = g.get("required", False) or bool(f.get("required"))
+            elif kind == "no-data":
+                _bucket(no_data, f.get("key") or "", host, {"label": f.get("label")})
+            else:
+                g = _bucket(empty, (f.get("key"), f.get("label")), host, sample)
+                g["required"] = g.get("required", False) or bool(f.get("required"))
+
+    return {
+        "reports": len(rows),
+        "ids": [r["id"] for r in rows],
+        "versions": sorted({r["version"] for r in rows}),
+        "since": rows[-1]["created_at"] if rows else None,
+        "unknown": _ranked(unknown, lambda label, g: {"label": label, "required": g.get("required", False)}),
+        "failed": _ranked(failed, lambda key, g: {"key": key[0], "via": key[1], "labels": sorted(g.get("labels", []))}),
+        "empty": _ranked(empty, lambda key, g: {"key": key[0], "label": key[1], "required": g.get("required", False)}),
+        "no_data": _ranked(no_data, lambda key, g: {"key": key}),
+        "sites": sorted(
+            ({**s, "versions": sorted(s["versions"])} for s in sites.values()),
+            key=lambda s: s["failed"] + s["unknown"], reverse=True,
+        ),
+    }

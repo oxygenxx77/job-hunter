@@ -216,8 +216,9 @@ cd /tmp/job-hunter-demo/backend && uvicorn main:app --port 8011
 - **按岗位填写**：一键填充时「应聘岗位 / 意向城市」按关联的岗位填（岗位名去掉「【2027校园招聘】」之类的后缀，城市优先选你的意向城市）
 - **AI 文书**：按岗位 JD 生成自我评价（填充时替换简历里的自我评价）和开放题回答，生成的内容按岗位保存在扩展里
 - **标记已投递**：弹窗里点两次「投完了，在求职助手标记已投递」，同时同步到秋招看板
+- **填充报告**（3.3 版起）：每次一键填充后，扩展把没填上的字段、填完仍为空的控件发过来，存进 `jobs.db` 的 `fill_reports` 表。汇总接口按「不认识的标签 / 没填上 / 没填满 / 简历里没有」分类，按涉及网站数排序，用来持续补扩展的匹配规则。报告在扩展端已把简历文字换成占位符，入库前再抹一遍手机号、邮箱、身份证号
 
-相关接口：`POST /api/resume/sync`、`GET /api/autofill/context?url=`、`POST /api/autofill/write`、`POST /api/jobs/{id}/apply_intent`。
+相关接口：`POST /api/resume/sync`、`GET /api/autofill/context?url=`、`POST /api/autofill/write`、`POST /api/jobs/{id}/apply_intent`；填充报告：`POST /api/autofill/report`、`GET /api/autofill/reports/digest`、`GET /api/autofill/reports`、`POST /api/autofill/reports/resolve`（body：`{"ids": [1,2]}` 或 `{"up_to_id": 9}`）。
 
 ## 常见问题
 
