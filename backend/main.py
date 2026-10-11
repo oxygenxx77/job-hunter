@@ -307,8 +307,9 @@ def set_company_limit(payload: CompanyLimitIn):
 @app.post("/api/companies/applied")
 def mark_company_applied(payload: CompanyAppliedIn):
     """
-    这家公司投完了：「待投递」的岗位全部标记为已投递（受每日上限约束，逐个同步看板）；
-    一个待投递都没有时直接在秋招看板建一张「已投递」卡片。
+    这家公司投完了（通常是达到了公司限投数）：已投递的保持不变，
+    还没投的「待投递」岗位退回「待确认」，不计入投递数；
+    秋招看板里还没有这家时建一张「已投递」卡片。
     有看板卡片的公司会移到「已完成投递」栏，不再推荐。
     """
     if not kanban.is_available():
@@ -318,28 +319,17 @@ def mark_company_applied(payload: CompanyAppliedIn):
         raise HTTPException(404, "没有找到这家公司")
     name = min((j["company"] for j in jobs if j.get("company")), key=len, default=payload.key)
 
-    applied, error, failed_sync = 0, None, None
-    for job in sorted((j for j in jobs if j["status"] == "approved"), key=lambda j: j["id"]):
-        try:
-            result = actions.apply_job(job["id"])
-        except actions.ActionError as e:
-            error = str(e)
-            break
-        applied += 1
-        if "失败" in (result.get("kanban_sync") or ""):
-            failed_sync = result["kanban_sync"]
-    sync = failed_sync or (f"已同步到秋招看板（{applied} 个岗位）" if applied else None)
+    released = db.batch_update_status([j["id"] for j in jobs if j["status"] == "approved"], "pending")
 
-    if not applied and not error:
-        card = next((c for n in {j.get("company") or "" for j in jobs}
-                     if n and (c := kanban.find_card(n, kanban.load_cards()))), None)
-        if card:
-            sync = f"秋招看板里已经有「{card['company']}」了"
-        else:
-            titles = [j["title"] for j in jobs if j["status"] == "applied" and j.get("title")]
-            sync = kanban.upsert_card(name, note="来自求职助手", add_position="、".join(titles) or None,
-                                      history_note="求职助手：这家公司投完了")
-    return {"ok": error is None, "company": name, "applied": applied, "kanban_sync": sync, "error": error}
+    card = next((c for n in {j.get("company") or "" for j in jobs}
+                 if n and (c := kanban.find_card(n, kanban.load_cards()))), None)
+    if card:
+        sync = f"秋招看板里已经有「{card['company']}」了"
+    else:
+        titles = [j["title"] for j in jobs if j["status"] == "applied" and j.get("title")]
+        sync = kanban.upsert_card(name, note="来自求职助手", add_position="、".join(titles) or None,
+                                  history_note="求职助手：这家公司投完了")
+    return {"ok": True, "company": name, "released": released, "kanban_sync": sync}
 
 
 @app.post("/api/rematch")

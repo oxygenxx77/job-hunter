@@ -1532,22 +1532,21 @@
       }
     }
 
-    /** 这家公司投完了：待投递的全部记为已投递，同步看板，移到「已完成投递」 */
+    /** 这家公司投完了（多半是到了限投数）：没投的待投递退回待确认，移到「已完成投递」 */
     async function markCompanyDone(c) {
       const pending = c.picked.filter((j) => j.status === 'approved');
-      const msg = pending.length
-        ? `「${c.name}」投完了？\n\n会把待投递的 ${pending.length} 个岗位（${pending.map((j) => j.title).join('、')}）标记为已投递，同步到秋招看板，并把这家移到「已完成投递」。`
-        : `「${c.name}」投完了？\n\n会在秋招看板记一张「已投递」卡片，并把这家移到「已完成投递」。\n这里没有选中的岗位，投了哪些岗位可以之后在看板里补上。`;
+      const msg = `「${c.name}」投完了？\n\n`
+        + (pending.length
+          ? `待投递的 ${pending.length} 个岗位（${pending.map((j) => j.title).join('、')}）不会算作已投递，会退回「待确认」。其中真投了的，请先在岗位上点「✓ 已投递」。\n`
+          : '')
+        + (c.kanban ? '' : '会在秋招看板记一张「已投递」卡片，')
+        + '这家会移到「已完成投递」，不再推荐。';
       if (!confirm(msg)) return;
       try {
         const r = await api('/api/companies/applied', { method: 'POST', body: { key: c.key } });
         await refreshAll();
-        if (r.error) {
-          toast(r.applied ? `已标记 ${r.applied} 个，剩下的没标上：${r.error}` : r.error, true);
-        } else {
-          revealApplied(c.key);
-          toast(`「${r.company}」投完啦 🎉${r.kanban_sync ? ' ' + r.kanban_sync : ''}`);
-        }
+        revealApplied(c.key);
+        toast(`「${r.company}」投完啦 🎉${r.released ? `；${r.released} 个没投的已退回待确认` : ''}${r.kanban_sync ? ' ' + r.kanban_sync : ''}`);
       } catch (err) {
         toast(err.message, true);
       }
@@ -1687,7 +1686,7 @@
         }).join('')}</div>` : '';
       const inMain = !!findCompanyIn('companies', c.key);
       const doneBtn = inMain
-        ? '<button class="btn" data-co="done" title="这家公司投完了：待投递的岗位记为已投递，同步秋招看板，移到「已完成投递」">✅ 这家投完了</button>'
+        ? '<button class="btn" data-co="done" title="这家公司投完了（比如到了限投数）：没投的待投递岗位退回待确认，移到「已完成投递」">✅ 这家投完了</button>'
         : '';
       // 看板里已有这家、只是待投递还没投完：不再推荐新岗位
       if (inMain && c.kanban) {
@@ -1701,7 +1700,7 @@
             ${doneBtn}
           </div>
           ${picked}
-          <div class="co-foot"><span>这家已经在秋招看板里了，不再推荐新岗位；上面待投递的投完后点「✅ 这家投完了」</span></div>
+          <div class="co-foot"><span>这家已经在秋招看板里了，不再推荐新岗位；投完了（或到了限投数）就点「✅ 这家投完了」</span></div>
         </div>`;
       }
 
